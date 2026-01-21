@@ -3,333 +3,394 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legal Text Parser - Profesyonel</title>
+  <title>Legal Text Parser - External Data Engine</title>
   <style>
+    :root {
+      --primary: #1e293b;
+      --accent: #3b82f6;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
     body {
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       padding: 24px;
-      background: #f4f7f6;
-      color: #2c3e50;
+      background: var(--bg);
+      color: var(--text);
       line-height: 1.6;
     }
-    h1 { font-size: 26px; margin-bottom: 20px; color: #1a1a1a; border-left: 5px solid #000; padding-left: 15px; }
+
+    h1 { 
+      font-size: 26px; 
+      margin-bottom: 24px; 
+      color: var(--primary); 
+      border-left: 6px solid var(--accent); 
+      padding-left: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 24px;
     }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      padding: 12px 18px;
+      background: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     textarea {
       width: 100%;
-      height: 500px;
+      height: 450px;
       padding: 18px;
-      border-radius: 12px;
-      border: 1px solid #d1d5db;
-      resize: vertical;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 14px;
-      box-sizing: border-box;
-      background: #ffffff;
-      transition: border-color 0.3s;
-    }
-    textarea:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    pre {
-      height: 500px;
-      padding: 18px;
-      background: #111827;
-      color: #10b981;
-      border-radius: 12px;
-      overflow: auto;
-      font-size: 13px;
-      margin: 0;
-      box-sizing: border-box;
-      border: 1px solid #374151;
-    }
-    button {
-      margin-top: 24px;
-      padding: 14px 32px;
-      border-radius: 10px;
       border: none;
-      background: #111827;
+      resize: none;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      outline: none;
+    }
+
+    pre {
+      height: 450px;
+      padding: 18px;
+      background: #0f172a;
+      color: #38bdf8;
+      overflow: auto;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .actions {
+      margin: 24px 0;
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      background: var(--primary);
       color: #fff;
       font-weight: 600;
-      font-size: 16px;
       cursor: pointer;
       transition: all 0.2s;
     }
-    button:hover {
-      background: #374151;
-      transform: translateY(-1px);
+
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
     }
+
+    button.secondary { background: var(--accent); }
+    button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+
     .section-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       margin: 30px 0 12px 0;
-      color: #6b7280;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 1.5px;
       display: flex;
       align-items: center;
     }
+
     .section-title::after {
       content: "";
       flex: 1;
       height: 1px;
-      background: #e5e7eb;
+      background: #e2e8f0;
       margin-left: 15px;
     }
+
     .badges { 
       display: flex; 
       flex-wrap: wrap; 
-      gap: 10px;
-      margin-bottom: 24px;
+      gap: 8px;
+      margin-bottom: 20px;
     }
+
     .badge {
-      display: inline-block;
       background: #fff;
-      border: 1px solid #e5e7eb;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      color: #374151;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .badge strong {
-      color: #111827;
-      margin-right: 4px;
-    }
-    .keyword-badge {
-      background: #eff6ff;
-      border: 1px solid #dbeafe;
-      color: #1e40af;
+      border: 1px solid #e2e8f0;
       padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12.5px;
-      font-weight: 600;
-      transition: transform 0.2s;
+      border-radius: 6px;
+      font-size: 13px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
-    .keyword-badge:hover {
-      background: #dbeafe;
-      transform: scale(1.05);
-    }
-    .law-badge {
-      background: #fffbeb;
-      border: 1px solid #fef3c7;
-      color: #92400e;
-    }
+
+    .badge-label { color: #64748b; font-weight: 500; margin-right: 4px; }
+    .badge-value { color: var(--primary); font-weight: 700; }
+
+    .keyword-badge { background: #eff6ff; border-color: #dbeafe; color: #1e40af; }
+    .law-badge { background: #fffbeb; border-color: #fef3c7; color: #92400e; cursor: help; }
+    .sentiment-badge { background: #f0fdf4; border-color: #dcfce7; color: #166534; }
+
+    .status-msg { font-size: 12px; color: var(--accent); font-weight: 500; }
 
     @media (max-width: 1024px) {
       .grid { grid-template-columns: 1fr; }
-      textarea, pre { height: 350px; }
     }
   </style>
 </head>
 <body>
 
-<h1>⚖️ Legal Text Parser v2.1</h1>
+<h1>
+  ⚖️ Legal Text Parser v4.1
+  <span id="loader_status" class="status-msg">Sözlük Yükleniyor...</span>
+</h1>
 
 <div class="grid">
-  <textarea id="input" placeholder="Analiz edilecek karar metnini buraya yapıştırın..."></textarea>
-  <pre id="output">// JSON verisi burada yapılandırılacak</pre>
+  <div class="card">
+    <div class="card-header">Analiz Edilecek Metin</div>
+    <textarea id="input" placeholder="Yargıtay kararı veya mevzuat metnini yapıştırın..."></textarea>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      Yapılandırılmış Veri (JSON)
+      <button onclick="copyJSON()" style="padding: 4px 10px; font-size: 11px; background: #475569;">Kopyala</button>
+    </div>
+    <pre id="output">// Bekliyor...</pre>
+  </div>
 </div>
 
-<button onclick="parseText()">Analiz Et ve Verileri Çıkar</button>
+<div class="actions">
+  <button id="btn_analyze" onclick="runAnalysis()" disabled>Derin Analiz Başlat</button>
+  <button class="secondary" onclick="clearAll()">Ekranı Temizle</button>
+</div>
 
-<div class="section-title">Temel Karar Verileri</div>
-<div class="badges" id="badges"></div>
+<div class="section-title">Metrikler ve Yoğunluk</div>
+<div id="stats_area" class="badges"></div>
 
-<div class="section-title">Tespit Edilen Mevzuat (Kanun & Maddeler)</div>
-<div class="badges" id="laws"></div>
+<div class="section-title">Duygu ve Ton Analizi</div>
+<div id="sentiment_area" class="badges"></div>
 
-<div class="section-title">Hukuki Kavramlar ve Kurumlar</div>
-<div class="badges" id="keywords"></div>
+<div class="section-title">Karar Bilgileri</div>
+<div id="meta_area" class="badges"></div>
+
+<div class="section-title">Atıf Haritası (Mevzuat Bağlamı)</div>
+<div id="laws_area" class="badges"></div>
+
+<div class="section-title">Kavramlar</div>
+<div id="keywords_area" class="badges"></div>
 
 <script>
-/* ================= KARAR TÜRÜ ANALİZİ ================= */
-function detectDecisionType(text) {
-  const rules = [
-    { ana: "Bozma", alt: "Tam", regex: /\bBOZULMASINA\b/i },
-    { ana: "Bozma", alt: "Kısmi", regex: /\bKISMEN BOZULMASINA\b/i },
-    { ana: "Onama", alt: "Tam", regex: /\bONANMASINA\b/i },
-    { ana: "Onama", alt: "Düzelterek", regex: /\bDÜZELTİLEREK ONANMASINA\b/i },
-    { ana: "Onama", alt: "Kısmi", regex: /\bKISMEN ONANMASINA\b/i },
-    { ana: "Ret", alt: "Temyizden", regex: /\b(TEMYİZ.*REDDİ|REDDİNE)\b/i },
-    { ana: "Ret", alt: "Usulden", regex: /\bUSULDEN REDDİ\b/i },
-    { ana: "Düşme", alt: null, regex: /\bDÜŞMESİNE\b/i },
-    { ana: "Görevsizlik", alt: null, regex: /\bGÖREVSİZLİK\b/i },
-    { ana: "Yetkisizlik", alt: null, regex: /\bYETKİSİZLİK\b/i },
-    { ana: "İade", alt: "Mahkemesine", regex: /\bMAHKEMESİNE İADESİNE\b/i }
-  ];
+/**
+ * GLOBAL DATA STORAGE
+ */
+let LEGAL_DICTIONARY = { dictionary: [], sentiment_indicators: {} };
 
-  for (const r of rules) {
-    const m = text.match(r.regex);
-    if (m) return { ana: r.ana, alt: r.alt, ibare: m[0] };
+/**
+ * JSON DOSYASINDAN VERİ OKUMA (FETCH API)
+ */
+async function loadDictionary() {
+  const statusEl = document.getElementById("loader_status");
+  const btn = document.getElementById("btn_analyze");
+  
+  try {
+    // Not: Gerçek bir ortamda 'legal-dictionary.json' dosyası aynı dizinde olmalı.
+    const response = await fetch('legal-dictionary.json');
+    if (!response.ok) throw new Error('Dosya yüklenemedi');
+    
+    const data = await response.json();
+    LEGAL_DICTIONARY = data;
+    
+    statusEl.textContent = "Sözlük Hazır ✓";
+    statusEl.style.color = "var(--success)";
+    btn.disabled = false;
+  } catch (error) {
+    console.error("Hata:", error);
+    statusEl.textContent = "Sözlük Yükleme Hatası (CORS veya Dosya Yok)";
+    statusEl.style.color = "var(--warning)";
+    // Fallback: Hata durumunda boş liste ile devam etmeyi sağlar veya buton pasif kalır
   }
-  return { ana: "Belirsiz", alt: null, ibare: null };
 }
 
-/* ================= MEVZUAT PARSER (HİYERARŞİK) ================= */
-function extractLaws(text) {
-  const laws = [];
-  // Örn: 5237 S. TÜRK CEZA KANUNU [ Madde 44 ] veya 5237 Sayılı Kanun m. 44
-  const lawPattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([^\[\n\.]+)(?:\[?\s*Madde\s*(\d+)\s*\]?|m\.\s*(\d+))?/gi;
-  
-  let match;
-  while ((match = lawPattern.exec(text)) !== null) {
-    const lawNo = match[1];
-    const lawName = match[2].trim();
-    const madde = match[3] || match[4];
+// Sayfa yüklendiğinde sözlüğü çek
+window.onload = loadDictionary;
 
-    let existingLaw = laws.find(l => l.lawNo === lawNo);
-    if (!existingLaw) {
-      existingLaw = { lawNo, lawName, maddeler: [] };
-      laws.push(existingLaw);
-    }
-    if (madde && !existingLaw.maddeler.includes(madde)) {
-      existingLaw.maddeler.push(madde);
-    }
+const MetaProcessor = {
+  extract(text) {
+    return {
+      daire: text.match(/(\d+\.\s*(Hukuk|Ceza)\s*Dairesi)/i)?.[1] || "Belirlenemedi",
+      esas: text.match(/(\d{4}\/\d+)\s*E\./i)?.[1] || "Bulunamadı",
+      karar: text.match(/(\d{4}\/\d+)\s*K\./i)?.[1] || "Bulunamadı",
+      tarih: text.match(/(\d{2}\.\d{2}\.\d{4})/)?.[1] || "Yok",
+      konu: text.match(/(?:DAVA TÜRÜ|KONU)\s*:\s*([^\n]+)/i)?.[1]?.trim() || "Genel Hukuki Uyuşmazlık"
+    };
   }
-
-  // Alternatif kısa yakalama: TCK m. 44 gibi
-  const shortPattern = /\b(TMK|TBK|TCK|İİK|HMK|CMK|TTK)\s*(?:m\.|Madde)\s*(\d+)/gi;
-  while ((match = shortPattern.exec(text)) !== null) {
-    const lawName = match[1];
-    const madde = match[2];
-    let existingLaw = laws.find(l => l.lawName === lawName);
-    if (!existingLaw) {
-      existingLaw = { lawNo: null, lawName, maddeler: [] };
-      laws.push(existingLaw);
-    }
-    if (madde && !existingLaw.maddeler.includes(madde)) {
-      existingLaw.maddeler.push(madde);
-    }
-  }
-
-  return laws;
-}
-
-/* ================= ZENGİNLEŞTİRİLMİŞ ANAHTAR KELİME SİSTEMİ ================= */
-function extractKeywords(text) {
-  const legalDictionary = {
-  "Davacı/Davalı/Sıfatlar": ["Davacı", "Davacılar", "Davalı", "Davalılar", "Aleyhine", "Lehine", "Müdahil", "Asli Müdahil", "Fer'i Müdahil", "Üçüncü Şahıs", "Hasımsız", "Müşteki", "Katılan", "Şüpheli", "Sanık", "Hükümlü", "Tutuklu", "Mağdur", "İhbar Olunan", "Muris", "Varis", "Muvazaa Tarafları"],
-  
-  "Temsil/Vekalet": ["Vekili", "Müdafi", "Vasi", "Kayyım", "Temsilci", "Azil", "Vekaletname", "Tevkil", "Yetki Belgesi", "Muvafakatname", "İstinabe", "Baro Pulu", "Vekalet Ücreti", "Muvafakat", "Yasal Temsilci"],
-  
-  "Tazminat Türleri": ["Maddi Tazminat", "Manevi Tazminat", "Destekten Yoksun Kalma", "Kıdem Tazminatı", "İhbar Tazminatı", "Kötüniyet Tazminatı", "Ecrimisil", "Haksız İşgal", "Yoksun Kalınan Kar", "Fiili Zarar", "Bedensel Zarar", "Maluliyet Tazminatı", "Geçici İş Göremezlik", "Sürekli İş Göremezlik", "Bakıcı Gideri", "Cenaze Giderleri", "Rücuen Tazminat"],
-  
-  "Gayrimenkul/Eşya Hukuku": ["Tapu İptal", "Tescil", "İrtifak", "İntifa", "Şufa", "Önalım", "Kadastro", "Zilyetlik", "Mülkiyet", "Kat Mülkiyeti", "Muris Muvazaası", "İzale-i Şuyu", "Ortaklığın Giderilmesi", "Elatmanın Önlenmesi", "Tevhit", "İfraz", "Şerh", "Beyanlar Hanesi", "Arsa Payı Karşılığı İnşaat", "Hizmet İrtifakı", "Sükna Hakkı", "Geçit Hakkı", "Muhdesatın Aidiyeti"],
-  
-  "Borçlar/Sözleşme Genel": ["Sözleşme", "Akit", "Alacak", "Borç", "İbra", "Temerrüt", "İhtar", "Muaccel", "Müteselsil", "Kefalet", "Cezai Şart", "Mücbir Sebep", "Fesih", "Gabin", "Muvazaa", "Edim", "İfa", "Sebepsiz Zenginleşme", "Aşırı Yararlanma", "Sözleşmeden Dönme", "Alacağın Temliki", "Borcun Nakli", "Hata", "Hile", "İkrah"],
-  
-  "Aile/Kişiler Hukuku": ["Boşanma", "Velayet", "Nafaka", "Tedbir Nafakası", "İştirak Nafakası", "Yoksulluk Nafakası", "Mehir", "Ziynet", "Mal Rejimi", "Edinilmiş Mallar", "Soybağı", "İddet Müddeti", "Anlaşmalı Boşanma", "Çekişmeli Boşanma", "Evlat Edinme", "Kayyımlık", "Vesayet", "Kısıtlanma", "Tanıma ve Tenfiz"],
-  
-  "İş Hukuku/Sendika": ["İşe İade", "İş Sözleşmesi", "Hizmet Tespit", "Fazla Mesai", "Yıllık İzin", "Hafta Tatili", "Mobbing", "UBGT", "İş Kazası", "Meslek Hastalığı", "Arabuluculuk Tutanağı", "Grev", "Lokavt", "Toplu İş Sözleşmesi", "Sendikal Tazminat", "Brüt Ücret", "Net Ücret", "Prime Esas Kazanç"],
-  
-  "İcra/İflas/Takip": ["İcra Takibi", "Ödeme Emri", "Haciz", "İhtiyati Haciz", "İstihkak", "İhalenin Feshi", "Menfi Tespit", "İstirdat", "Yediemin", "Kıymet Takdiri", "Sıra Cetveli", "Konkordato", "İflas Masası", "İcra İnkâr Tazminatı", "Tahliye Emri", "Maaş Haczi", "Taahhüdü İhlal", "Kambiyo Senetlerine Mahsus Takip"],
-  
-  "Ceza/Kovuşturma": ["Beraat", "Mahkumiyet", "Hükmün Açıklanması", "HAGB", "Tekerrür", "Tahrik", "Meşru Müdafaa", "Kasten", "Taksirle", "Olası Kast", "Suç Duyurusu", "Kovuşturma", "Soruşturma", "İddianame", "KYOK", "Denetimli Serbestlik", "Adli Kontrol", "Uzlaştırma", "Ön Ödeme", "Kamu Davası", "Şahsi Dava", "Yakalama Kararı", "Gözaltı"],
-  
-  "Usul/Yargılama": ["Zamanaşımı", "Hak Düşürücü Süre", "Adli Yardım", "Kesinleşme", "Bekletici Mesele", "Islah", "Feragat", "Kabul", "Sulh", "Yetkisizlik", "Görevsizlik", "Derdestlik", "Hüküm Özeti", "Hüküm Kurulması", "Dosyanın İşlemden Kaldırılması", "Tevsi-i Tahkikat", "Reddi Hakim", "Gıyap", "Duruşma Zaptı"],
-  
-  "Delil/İspat": ["Bilirkişi Raporu", "Keşif", "Tanık Beyanı", "Yemin", "İstizah", "Senet", "Kamera Kaydı", "Hukuka Aykırı Delil", "Kesin Delil", "Takdiri Delil", "İsticvap", "Yazılı Delil Başlangıcı", "Hayatın Olağan Akışı", "Maddi Vakıa"],
-  
-  "Üst Yargı/Kanun Yolu": ["İstinaf", "Temyiz", "Duruşmalı", "Müracaat", "Karar Düzeltme", "Yargıtay", "Danıştay", "Anayasa Mahkemesi", "Bölge Adliye Mahkemesi", "Bölge İdare Mahkemesi", "Bozma İlamı", "Düzelterek Onama", "Yargılamanın İadesi", "İlamat", "İçtihadı Birleştirme"],
-  
-  "Miras Hukuku": ["Tereke", "Vasiyetname", "Mirasçılık Belgesi", "Veraset İlamı", "Tenkis", "Denkleştirme", "Saklı Pay", "Reddi Miras", "Mirasın Reddi", "Atanmış Mirasçı", "Veraset ve İntikal", "Ölüme Bağlı Tasarruf", "Miras Sözleşmesi", "Terekenin Tespiti"],
-  
-  "Ticaret/Şirketler": ["Tacir", "Ticaret Sicili", "Şirket Ana Sözleşmesi", "Yönetim Kurulu", "Genel Kurul", "Kambiyo Senedi", "Çek", "Poliçe", "Bono", "Haksız Rekabet", "İmza Sirküleri", "Sermaye Artırımı", "Temsil ve İlzam", "Acente", "Broker", "Navlun", "Kayıtlı Sermaye"],
-  
-  "İdare/Vergi/İmar": ["Yürütmenin Durdurulması", "İptal Davası", "Tam Yargı", "İdari İşlem", "Vergi Ziyaı", "Usulsüzlük", "Re'sen", "Terkin", "Tahakkuk", "Tebliğ", "İmar Planı İptali", "Kamulaştırma", "Acele Kamulaştırma", "Ruhsat İptali", "Disiplin Cezası"],
-  
-  "Tüketici Hukuku": ["Ayıplı Mal", "Ayıplı Hizmet", "Tüketici Hakem Heyeti", "Cayma Hakkı", "Garanti Belgesi", "Mesafeli Sözleşme", "Taksitle Satış", "Devre Tatil", "Paket Tur"],
-  
-  "Sigorta Hukuku": ["Poliçe", "Reasürans", "Zeyilname", "Rücu", "Halefiyet", "Sürprim", "Muafiyet", "Sovaj", "Hasar İhbarı", "Zorunlu Mali Sorumluluk", "Kasko", "DASK"],
-  
-  "Sağlık/Tıp Hukuku": ["Malpraktis", "Aydınlatılmış Onam", "Komplikasyon", "Tıbbi Müdahale", "Vekâletsiz İş Görme", "Hekim Sorumluluğu", "Hasta Hakları"],
-  
-  "Fikri ve Sınai Mülkiyet": ["Telif Hakkı", "Marka Tescili", "Patent", "Faydalı Model", "Endüstriyel Tasarım", "Tecavüzün Men'i", "Tecavüzün Ref'i", "Maddi Haklar", "Manevi Haklar"],
-  
-  "Bilişim/KVKK": ["Kişisel Veri", "Veri Sorumlusu", "Açık Rıza", "Anonimleştirme", "Unutulma Hakkı", "Erişim Engelleme", "İçerik Sağlayıcı", "Siber Suçlar", "Log Kayıtları", "Verbis", "İlgili Kişi"],
-  
-  "Deniz Ticareti/Enerji": ["Çatma", "Müşterek Avarya", "Kaptan", "Donatan", "Liman Başkanlığı", "EPDK", "YEKDEM", "Lisanssız Üretim", "Bağlantı Anlaşması"]
 };
 
-  const foundKeywords = new Set();
-  for (const [category, variations] of Object.entries(legalDictionary)) {
-    for (const word of variations) {
-      const regex = new RegExp(`\\b${word}[a-zıüüğışç]*\\b`, "gi");
-      if (regex.test(text)) foundKeywords.add(word);
+const SentimentProcessor = {
+  analyze(text) {
+    const indicators = LEGAL_DICTIONARY.sentiment_indicators;
+    let scores = { teknik: 0, sert: 0, aciklayici: 0, kesin: 0 };
+    const lowerText = text.toLowerCase();
+
+    Object.keys(indicators).forEach(key => {
+      indicators[key].forEach(word => {
+        const rx = new RegExp(word, 'g');
+        const count = (lowerText.match(rx) || []).length;
+        scores[key] += count;
+      });
+    });
+
+    const dominant = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+    
+    return {
+      ton: dominant ? dominant.charAt(0).toUpperCase() + dominant.slice(1) : "Nötr",
+      puanlar: scores,
+      stil: scores.teknik > 10 ? "Akademik/Teknik" : "Operasyonel"
+    };
+  }
+};
+
+const LawProcessor = {
+  parse(text) {
+    const laws = [];
+    const sentences = text.split(/[.!?]\s+/);
+    const pattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([^\[\n\.]+)(?:\[?\s*Madde\s*(\d+)\s*\]?|m\.\s*(\d+))?/gi;
+    const shortRx = /\b(TMK|TBK|TCK|İİK|HMK|CMK|TTK|İşK|DMK)\s*(?:m\.|Madde)\s*(\d+)/gi;
+
+    sentences.forEach(s => {
+      let m;
+      while ((m = pattern.exec(s)) !== null) this.addLaw(laws, m[1], m[2].trim(), m[3] || m[4], s);
+      while ((m = shortRx.exec(s)) !== null) this.addLaw(laws, null, m[1], m[2], s);
+    });
+    return laws;
+  },
+  addLaw(list, no, name, madde, sentence) {
+    let law = list.find(l => l.lawNo === no || l.lawName === name);
+    if (!law) {
+      law = { lawNo: no, lawName: name, maddeler: [] };
+      list.push(law);
+    }
+    if (madde) {
+      let mObj = law.maddeler.find(item => item.no === madde);
+      if (!mObj) law.maddeler.push({ no: madde, baglam: sentence.trim().substring(0, 120) + "..." });
     }
   }
-  return Array.from(foundKeywords).sort();
-}
+};
 
-/* ================= ANA ANALİZ MOTORU ================= */
-function extractAllLegalInfo(text) {
-  const meta = {
-    daire: text.match(/(\d+\.\s*(Hukuk|Ceza)\s*Dairesi)/i)?.[1] || null,
-    esas: text.match(/(\d{4}\/\d+)\s*E\./i)?.[1] || null,
-    karar: text.match(/(\d{4}\/\d+)\s*K\./i)?.[1] || null,
-    mahkemesi: text.match(/MAHKEMESİ\s*:\s*([^\n]+)/i)?.[1]?.trim() || null,
-    tarih: text.match(/(\d{2}\.\d{2}\.\d{4})/)?.[1] || null
-  };
+const StatsProcessor = {
+  calculate(text, keywordCount) {
+    const words = text.trim().split(/\s+/).length;
+    const density = ((keywordCount / (words || 1)) * 100).toFixed(2);
+    return {
+      kelime: words,
+      kavramYogunlugu: `%${density}`,
+      okumaSuresi: Math.ceil(words / 150) + " dk",
+      karmasiklik: words > 500 ? "Yüksek" : "Orta"
+    };
+  }
+};
 
-  const konuMatch = text.match(/DAVA TÜRÜ\s*:\s*([^\n]+)/i) || text.match(/KONU\s*:\s*([^\n]+)/i);
+const KeywordProcessor = {
+  extract(text) {
+    const found = [];
+    const dictionary = LEGAL_DICTIONARY.dictionary;
+    dictionary.forEach(word => {
+      const rx = new RegExp(`\\b${word}[a-zıüüğışç]*\\b`, "gi");
+      if (rx.test(text)) found.push(word);
+    });
+    return found;
+  }
+};
 
-  return {
-    kimlik: meta,
-    analiz: {
-      kararTuru: detectDecisionType(text),
-      davaTuru: konuMatch ? konuMatch[1].trim() : null,
-      mevzuat: extractLaws(text),
-      anahtarKavramlar: extractKeywords(text)
-    }
-  };
-}
+const LegalAnalyzer = {
+  analyze(text) {
+    if (!text.trim()) return null;
+    const keywords = KeywordProcessor.extract(text);
+    return {
+      kimlik: MetaProcessor.extract(text),
+      duyguAnalizi: SentimentProcessor.analyze(text),
+      mevzuat: LawProcessor.parse(text),
+      kavramlar: keywords,
+      istatistikler: StatsProcessor.calculate(text, keywords.length),
+      analizTarihi: new Date().toLocaleString('tr-TR')
+    };
+  }
+};
 
-/* ================= UI VE RENDER ================= */
-function parseText() {
+function runAnalysis() {
   const input = document.getElementById("input").value;
-  if (!input.trim()) return;
+  const data = LegalAnalyzer.analyze(input);
+  if (!data) return;
 
-  const result = extractAllLegalInfo(input);
+  document.getElementById("output").textContent = JSON.stringify(data, null, 2);
 
-  document.getElementById("output").textContent = JSON.stringify(result, null, 2);
-
-  const basicContainer = document.getElementById("badges");
-  const lawContainer = document.getElementById("laws");
-  const keywordContainer = document.getElementById("keywords");
+  renderArea("stats_area", data.istatistikler);
   
-  [basicContainer, lawContainer, keywordContainer].forEach(c => c.innerHTML = "");
+  const sentArea = document.getElementById("sentiment_area");
+  sentArea.innerHTML = `<span class="badge sentiment-badge"><span class="badge-label">Baskın Ton:</span><span class="badge-value">${data.duyguAnalizi.ton}</span></span>`;
+  sentArea.innerHTML += `<span class="badge sentiment-badge"><span class="badge-label">Yazım Stili:</span><span class="badge-value">${data.duyguAnalizi.stil}</span></span>`;
 
-  function addBadge(container, label, value, customClass = "badge") {
-    if (!value) return;
+  renderArea("meta_area", data.kimlik);
+
+  const lawArea = document.getElementById("laws_area");
+  lawArea.innerHTML = "";
+  data.mevzuat.forEach(l => {
+    l.maddeler.forEach(m => {
+      const span = document.createElement("span");
+      span.className = "badge law-badge";
+      span.title = m.baglam;
+      span.innerHTML = `<strong>${l.lawName}</strong> m.${m.no}`;
+      lawArea.appendChild(span);
+    });
+  });
+
+  const keyArea = document.getElementById("keywords_area");
+  keyArea.innerHTML = "";
+  data.kavramlar.forEach(k => {
+    keyArea.innerHTML += `<span class="badge keyword-badge">${k}</span>`;
+  });
+}
+
+function renderArea(id, obj) {
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  Object.entries(obj).forEach(([k, v]) => {
     const span = document.createElement("span");
-    span.className = customClass;
-    span.innerHTML = label ? `<strong>${label}:</strong> ${value}` : value;
-    container.appendChild(span);
-  }
-
-  // Temel Bilgiler
-  addBadge(basicContainer, "Esas", result.kimlik.esas);
-  addBadge(basicContainer, "Karar", result.kimlik.karar);
-  addBadge(basicContainer, "Tür", result.analiz.kararTuru.ana);
-  addBadge(basicContainer, "Konu", result.analiz.davaTuru);
-
-  // Mevzuat (İlişkili Yapı)
-  result.analiz.mevzuat.forEach(law => {
-    const maddelerText = law.maddeler.length > 0 ? ` (Madde: ${law.maddeler.join(', ')})` : "";
-    const label = law.lawNo ? `${law.lawNo} S. ${law.lawName}` : law.lawName;
-    addBadge(lawContainer, null, label + maddelerText, "badge law-badge");
+    span.className = "badge";
+    span.innerHTML = `<span class="badge-label">${k}:</span><span class="badge-value">${v}</span>`;
+    el.appendChild(span);
   });
+}
 
-  // Kavramlar
-  result.analiz.anahtarKavramlar.forEach(k => {
-    addBadge(keywordContainer, null, k, "badge keyword-badge");
-  });
+function clearAll() {
+  document.getElementById("input").value = "";
+  document.getElementById("output").textContent = "// Bekliyor...";
+  ["stats_area", "sentiment_area", "meta_area", "laws_area", "keywords_area"].forEach(id => document.getElementById(id).innerHTML = "");
+}
+
+function copyJSON() {
+  const pre = document.getElementById("output");
+  navigator.clipboard.writeText(pre.textContent);
 }
 </script>
 
