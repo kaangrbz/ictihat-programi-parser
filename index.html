@@ -2,14 +2,17 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Legal Text Parser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Text Parser - Gelişmiş</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       padding: 24px;
       background: #fafafa;
+      color: #333;
+      line-height: 1.6;
     }
-    h1 { font-size: 22px; margin-bottom: 16px; }
+    h1 { font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -17,37 +20,67 @@
     }
     textarea {
       width: 100%;
-      height: 420px;
-      padding: 12px;
+      height: 450px;
+      padding: 16px;
       border-radius: 12px;
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       resize: vertical;
+      font-family: inherit;
+      box-sizing: border-box;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #000;
     }
     pre {
-      height: 420px;
-      padding: 12px;
-      background: #f2f2f2;
+      height: 450px;
+      padding: 16px;
+      background: #1e1e1e;
+      color: #d4d4d4;
       border-radius: 12px;
       overflow: auto;
       font-size: 13px;
+      margin: 0;
+      box-sizing: border-box;
     }
     button {
-      margin-top: 16px;
-      padding: 10px 20px;
+      margin-top: 20px;
+      padding: 12px 28px;
       border-radius: 10px;
       border: none;
       background: #000;
       color: #fff;
+      font-weight: 600;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .badges { margin-top: 16px; }
+    button:hover {
+      background: #333;
+    }
+    .badges { 
+      margin-top: 20px; 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 8px;
+    }
     .badge {
       display: inline-block;
-      background: #e5e5e5;
-      padding: 6px 10px;
-      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #eee;
+      padding: 6px 14px;
+      border-radius: 8px;
       font-size: 13px;
-      margin: 4px 6px 0 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .badge strong {
+      color: #555;
+      text-transform: capitalize;
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      textarea, pre { height: 300px; }
     }
   </style>
 </head>
@@ -56,61 +89,124 @@
 <h1>⚖️ Legal Text Parser</h1>
 
 <div class="grid">
-  <textarea id="input" placeholder="Karar metnini buraya yapıştır…"></textarea>
-  <pre id="output">JSON çıktısı</pre>
+  <textarea id="input" placeholder="Yargıtay veya Bölge Adliye Mahkemesi karar metnini buraya yapıştırın..."></textarea>
+  <pre id="output">JSON çıktısı burada görünecek...</pre>
 </div>
 
-<button onclick="parseText()">Parse Et</button>
+<button onclick="parseText()">Metni Çözümle</button>
 
 <div class="badges" id="badges"></div>
 
 <script>
+/* ================= KARAR TÜRÜ (DETAYLI) ================= */
 function detectDecisionType(text) {
   const rules = [
-    { key: "ONAMA", regex: /\bONANMASINA\b/i },
-    { key: "KISMEN ONAMA", regex: /\bKISMEN ONANMASINA\b/i },
-    { key: "BOZMA", regex: /\bBOZULMASINA\b/i },
-    { key: "KISMEN BOZMA", regex: /\bKISMEN BOZULMASINA\b/i },
-    { key: "RED", regex: /\b(TEMYİZ İSTEĞİNİN REDDİ|REDDEDİLMESİNE)\b/i },
-    { key: "USULDEN RET", regex: /\bUSULDEN REDDİ\b/i },
-    { key: "DÜŞME", regex: /\bDÜŞMESİNE\b/i }
+    { ana: "Bozma", alt: "Tam", regex: /\bBOZULMASINA\b/i },
+    { ana: "Bozma", alt: "Kısmi", regex: /\bKISMEN BOZULMASINA\b/i },
+
+    { ana: "Onama", alt: "Tam", regex: /\bONANMASINA\b/i },
+    { ana: "Onama", alt: "Düzelterek", regex: /\bDÜZELTİLEREK ONANMASINA\b/i },
+    { ana: "Onama", alt: "Kısmi", regex: /\bKISMEN ONANMASINA\b/i },
+
+    { ana: "Ret", alt: "Temyizden", regex: /\b(TEMYİZ.*REDDİ|REDDİNE)\b/i },
+    { ana: "Ret", alt: "Usulden", regex: /\bUSULDEN REDDİ\b/i },
+
+    { ana: "Düşme", alt: null, regex: /\bDÜŞMESİNE\b/i },
+    { ana: "Görevsizlik", alt: null, regex: /\bGÖREVSİZLİK\b/i },
+    { ana: "Yetkisizlik", alt: null, regex: /\bYETKİSİZLİK\b/i }
   ];
-  for (const r of rules) if (r.regex.test(text)) return r.key;
-  return "BELİRSİZ";
+
+  for (const r of rules) {
+    const m = text.match(r.regex);
+    if (m) {
+      return { ana: r.ana, alt: r.alt, gerekce: m[0] };
+    }
+  }
+  return { ana: "Belirsiz", alt: null, gerekce: null };
 }
 
-// === ANA FONKSİYON ===
-// Tüm parser'ları buradan yönetiyoruz
+/* ================= ANA FONKSİYON ================= */
 function extractAllLegalInfo(text) {
+  const original = text;
+
+  /* --- META --- */
+  const meta = {
+    daire: text.match(/(\d+\.\s*Hukuk Dairesi)/i)?.[1] || null,
+    esas: text.match(/(\d{4}\/\d+)\s*E\./i)?.[1] || null,
+    karar: text.match(/(\d{4}\/\d+)\s*K\./i)?.[1] || null,
+    mahkemesi: text.match(/MAHKEMESİ\s*:\s*(.+)/i)?.[1]?.trim() || null,
+    davaTuru: text.match(/DAVA TÜRÜ\s*:\s*(.+)/i)?.[1]?.trim() || null,
+    tarih: text.match(/(\d{2}\.\d{2}\.\d{4})/)?.[1] || null
+  };
+
+  /* --- ÜST BAŞLIKLAR (ESAS/KARAR → İÇTİHAT METNİ) --- */
+  const ustBasliklar = [];
+  const ustBlok = original.match(
+    /\d{4}\/\d+\s*K\.[\s\S]*?(?="İçtihat Metni")/i
+  );
+
+  if (ustBlok) {
+    ustBlok[0]
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l =>
+        l &&
+        l === l.toUpperCase() &&
+        l.length < 120 &&
+        !l.includes("HUKUK DAİRESİ") &&
+        !l.includes("E.") &&
+        !l.includes("K.")
+      )
+      .forEach(l => ustBasliklar.push(l));
+  }
 
   return {
-    meta: {
-      daire: text.match(/(\d+\.\s*Hukuk Dairesi)/i)?.[1] || null,
-      esas: text.match(/(\d{4}\/\d+)\s*E\./i)?.[1] || null,
-      karar: text.match(/(\d{4}\/\d+)\s*K\./i)?.[1] || null,
-      mahkeme: text.match(/MAHKEMESİ\s*:\s*(.+)/i)?.[1]?.trim() || null,
-      davaTuru: text.match(/DAVA TÜRÜ\s*:\s*(.+)/i)?.[1]?.trim() || null,
-      kararTuru: detectDecisionType(text),
-      tarih: text.match(/(\d{2}\.\d{2}\.\d{4})/)?.[1] || null
-    }
+    meta,
+    ustBilgiler: {
+      basliklar: ustBasliklar,
+      konu: ustBasliklar[0] || null
+    },
+    kararTuru: detectDecisionType(text)
   };
 }
 
+/* ================= UI / TETİKLEYİCİ ================= */
 function parseText() {
   const input = document.getElementById("input").value;
+  if (!input.trim()) return;
+
   const result = extractAllLegalInfo(input);
 
+  // JSON Çıktısını Göster
   document.getElementById("output").textContent = JSON.stringify(result, null, 2);
 
-  const badges = document.getElementById("badges");
-  badges.innerHTML = "";
+  // Badge'leri (Etiketleri) Güncelle
+  const badgesContainer = document.getElementById("badges");
+  badgesContainer.innerHTML = "";
 
-  for (const [k, v] of Object.entries(result.meta)) {
-    if (!v) continue;
+  // Badge oluşturma yardımcı fonksiyonu
+  function createBadge(label, value) {
+    if (!value) return;
     const span = document.createElement("span");
     span.className = "badge";
-    span.innerHTML = `<strong>${k}:</strong> ${v}`;
-    badges.appendChild(span);
+    span.innerHTML = `<strong>${label}:</strong> ${value}`;
+    badgesContainer.appendChild(span);
+  }
+
+  // Meta verileri ekle
+  Object.entries(result.meta).forEach(([key, val]) => {
+    createBadge(key, val);
+  });
+
+  // Karar Türü verilerini ekle
+  if (result.kararTuru && result.kararTuru.ana !== "Belirsiz") {
+    createBadge("Karar", result.kararTuru.ana);
+    if (result.kararTuru.alt) createBadge("Tür", result.kararTuru.alt);
+  }
+
+  // Konu bilgisini ekle
+  if (result.ustBilgiler && result.ustBilgiler.konu) {
+    createBadge("Konu", result.ustBilgiler.konu);
   }
 }
 </script>
