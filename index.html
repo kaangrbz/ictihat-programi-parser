@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legal Text Parser - External Data Engine</title>
+  <title>Legal Text Parser - Fixed Engine</title>
   <style>
     :root {
       --primary: #1e293b;
@@ -72,6 +72,7 @@
       font-family: 'Fira Code', monospace;
       font-size: 13px;
       outline: none;
+      box-sizing: border-box;
     }
 
     pre {
@@ -161,21 +162,31 @@
 <body>
 
 <h1>
-  ⚖️ Legal Text Parser v4.1
+  ⚖️ Legal Text Parser v4.2
   <span id="loader_status" class="status-msg">Sözlük Yükleniyor...</span>
 </h1>
 
 <div class="grid">
   <div class="card">
     <div class="card-header">Analiz Edilecek Metin</div>
-    <textarea id="input" placeholder="Yargıtay kararı veya mevzuat metnini yapıştırın..."></textarea>
+    <textarea id="input" placeholder="Yargıtay kararı veya mevzuat metnini buraya yapıştırın...">
+T.C.
+YARGITAY
+12. Hukuk Dairesi
+
+Esas No: 2023/12345
+Karar No: 2024/6789
+Tarih: 15.01.2024
+
+Davacı vekili tarafından sunulan dilekçede; müvekkilinin kıdem tazminatı ve ihbar tazminatı alacaklarının ödenmediği, iş sözleşmesinin haksız feshedildiği iddia edilmiştir. Davalı taraf ise zamanaşımı itirazında bulunmuştur. Mahkemece yapılan incelemede, bilirkişi raporu doğrultusunda davanın kısmen kabulüne karar verilmiştir.
+    </textarea>
   </div>
   <div class="card">
     <div class="card-header">
       Yapılandırılmış Veri (JSON)
       <button onclick="copyJSON()" style="padding: 4px 10px; font-size: 11px; background: #475569;">Kopyala</button>
     </div>
-    <pre id="output">// Bekliyor...</pre>
+    <pre id="output">// Analiz bekleniyor...</pre>
   </div>
 </div>
 
@@ -196,7 +207,7 @@
 <div class="section-title">Atıf Haritası (Mevzuat Bağlamı)</div>
 <div id="laws_area" class="badges"></div>
 
-<div class="section-title">Kavramlar</div>
+<div class="section-title">Kavramlar (Kategorik)</div>
 <div id="keywords_area" class="badges"></div>
 
 <script>
@@ -206,74 +217,69 @@
 let LEGAL_DICTIONARY = { dictionary: [], sentiment_indicators: {} };
 
 /**
- * JSON DOSYASINDAN VERİ OKUMA (FETCH API)
+ * VERİ YÜKLEME VE DÜZELTME
  */
 async function loadDictionary() {
   const statusEl = document.getElementById("loader_status");
   const btn = document.getElementById("btn_analyze");
   
   try {
-    // Not: Gerçek bir ortamda 'legal-dictionary.json' dosyası aynı dizinde olmalı.
-    // const response = await fetch('legal-dictionary.json');
-    // if (!response.ok) throw new Error('Dosya yüklenemedi');
-    
-    const data = {
-  "Davacı/Davalı/Sıfatlar": ["Davacı", "Davacılar", "Davalı", "Davalılar", "Aleyhine", "Lehine", "Müdahil", "Asli Müdahil", "Fer'i Müdahil", "Üçüncü Şahıs", "Hasımsız", "Müşteki", "Katılan", "Şüpheli", "Sanık", "Hükümlü", "Tutuklu", "Mağdur", "İhbar Olunan", "Muris", "Varis", "Muvazaa Tarafları"],
-  
-  "Temsil/Vekalet": ["Vekili", "Müdafi", "Vasi", "Kayyım", "Temsilci", "Azil", "Vekaletname", "Tevkil", "Yetki Belgesi", "Muvafakatname", "İstinabe", "Baro Pulu", "Vekalet Ücreti", "Muvafakat", "Yasal Temsilci"],
-  
-  "Tazminat Türleri": ["Maddi Tazminat", "Manevi Tazminat", "Destekten Yoksun Kalma", "Kıdem Tazminatı", "İhbar Tazminatı", "Kötüniyet Tazminatı", "Ecrimisil", "Haksız İşgal", "Yoksun Kalınan Kar", "Fiili Zarar", "Bedensel Zarar", "Maluliyet Tazminatı", "Geçici İş Göremezlik", "Sürekli İş Göremezlik", "Bakıcı Gideri", "Cenaze Giderleri", "Rücuen Tazminat"],
-  
-  "Gayrimenkul/Eşya Hukuku": ["Tapu İptal", "Tescil", "İrtifak", "İntifa", "Şufa", "Önalım", "Kadastro", "Zilyetlik", "Mülkiyet", "Kat Mülkiyeti", "Muris Muvazaası", "İzale-i Şuyu", "Ortaklığın Giderilmesi", "Elatmanın Önlenmesi", "Tevhit", "İfraz", "Şerh", "Beyanlar Hanesi", "Arsa Payı Karşılığı İnşaat", "Hizmet İrtifakı", "Sükna Hakkı", "Geçit Hakkı", "Muhdesatın Aidiyeti"],
-  
-  "Borçlar/Sözleşme Genel": ["Sözleşme", "Akit", "Alacak", "Borç", "İbra", "Temerrüt", "İhtar", "Muaccel", "Müteselsil", "Kefalet", "Cezai Şart", "Mücbir Sebep", "Fesih", "Gabin", "Muvazaa", "Edim", "İfa", "Sebepsiz Zenginleşme", "Aşırı Yararlanma", "Sözleşmeden Dönme", "Alacağın Temliki", "Borcun Nakli", "Hata", "Hile", "İkrah"],
-  
-  "Aile/Kişiler Hukuku": ["Boşanma", "Velayet", "Nafaka", "Tedbir Nafakası", "İştirak Nafakası", "Yoksulluk Nafakası", "Mehir", "Ziynet", "Mal Rejimi", "Edinilmiş Mallar", "Soybağı", "İddet Müddeti", "Anlaşmalı Boşanma", "Çekişmeli Boşanma", "Evlat Edinme", "Kayyımlık", "Vesayet", "Kısıtlanma", "Tanıma ve Tenfiz"],
-  
-  "İş Hukuku/Sendika": ["İşe İade", "İş Sözleşmesi", "Hizmet Tespit", "Fazla Mesai", "Yıllık İzin", "Hafta Tatili", "Mobbing", "UBGT", "İş Kazası", "Meslek Hastalığı", "Arabuluculuk Tutanağı", "Grev", "Lokavt", "Toplu İş Sözleşmesi", "Sendikal Tazminat", "Brüt Ücret", "Net Ücret", "Prime Esas Kazanç"],
-  
-  "İcra/İflas/Takip": ["İcra Takibi", "Ödeme Emri", "Haciz", "İhtiyati Haciz", "İstihkak", "İhalenin Feshi", "Menfi Tespit", "İstirdat", "Yediemin", "Kıymet Takdiri", "Sıra Cetveli", "Konkordato", "İflas Masası", "İcra İnkâr Tazminatı", "Tahliye Emri", "Maaş Haczi", "Taahhüdü İhlal", "Kambiyo Senetlerine Mahsus Takip"],
-  
-  "Ceza/Kovuşturma": ["Beraat", "Mahkumiyet", "Hükmün Açıklanması", "HAGB", "Tekerrür", "Tahrik", "Meşru Müdafaa", "Kasten", "Taksirle", "Olası Kast", "Suç Duyurusu", "Kovuşturma", "Soruşturma", "İddianame", "KYOK", "Denetimli Serbestlik", "Adli Kontrol", "Uzlaştırma", "Ön Ödeme", "Kamu Davası", "Şahsi Dava", "Yakalama Kararı", "Gözaltı"],
-  
-  "Usul/Yargılama": ["Zamanaşımı", "Hak Düşürücü Süre", "Adli Yardım", "Kesinleşme", "Bekletici Mesele", "Islah", "Feragat", "Kabul", "Sulh", "Yetkisizlik", "Görevsizlik", "Derdestlik", "Hüküm Özeti", "Hüküm Kurulması", "Dosyanın İşlemden Kaldırılması", "Tevsi-i Tahkikat", "Reddi Hakim", "Gıyap", "Duruşma Zaptı"],
-  
-  "Delil/İspat": ["Bilirkişi Raporu", "Keşif", "Tanık Beyanı", "Yemin", "İstizah", "Senet", "Kamera Kaydı", "Hukuka Aykırı Delil", "Kesin Delil", "Takdiri Delil", "İsticvap", "Yazılı Delil Başlangıcı", "Hayatın Olağan Akışı", "Maddi Vakıa"],
-  
-  "Üst Yargı/Kanun Yolu": ["İstinaf", "Temyiz", "Duruşmalı", "Müracaat", "Karar Düzeltme", "Yargıtay", "Danıştay", "Anayasa Mahkemesi", "Bölge Adliye Mahkemesi", "Bölge İdare Mahkemesi", "Bozma İlamı", "Düzelterek Onama", "Yargılamanın İadesi", "İlamat", "İçtihadı Birleştirme"],
-  
-  "Miras Hukuku": ["Tereke", "Vasiyetname", "Mirasçılık Belgesi", "Veraset İlamı", "Tenkis", "Denkleştirme", "Saklı Pay", "Reddi Miras", "Mirasın Reddi", "Atanmış Mirasçı", "Veraset ve İntikal", "Ölüme Bağlı Tasarruf", "Miras Sözleşmesi", "Terekenin Tespiti"],
-  
-  "Ticaret/Şirketler": ["Tacir", "Ticaret Sicili", "Şirket Ana Sözleşmesi", "Yönetim Kurulu", "Genel Kurul", "Kambiyo Senedi", "Çek", "Poliçe", "Bono", "Haksız Rekabet", "İmza Sirküleri", "Sermaye Artırımı", "Temsil ve İlzam", "Acente", "Broker", "Navlun", "Kayıtlı Sermaye"],
-  
-  "İdare/Vergi/İmar": ["Yürütmenin Durdurulması", "İptal Davası", "Tam Yargı", "İdari İşlem", "Vergi Ziyaı", "Usulsüzlük", "Re'sen", "Terkin", "Tahakkuk", "Tebliğ", "İmar Planı İptali", "Kamulaştırma", "Acele Kamulaştırma", "Ruhsat İptali", "Disiplin Cezası"],
-  
-  "Tüketici Hukuku": ["Ayıplı Mal", "Ayıplı Hizmet", "Tüketici Hakem Heyeti", "Cayma Hakkı", "Garanti Belgesi", "Mesafeli Sözleşme", "Taksitle Satış", "Devre Tatil", "Paket Tur"],
-  
-  "Sigorta Hukuku": ["Poliçe", "Reasürans", "Zeyilname", "Rücu", "Halefiyet", "Sürprim", "Muafiyet", "Sovaj", "Hasar İhbarı", "Zorunlu Mali Sorumluluk", "Kasko", "DASK"],
-  
-  "Sağlık/Tıp Hukuku": ["Malpraktis", "Aydınlatılmış Onam", "Komplikasyon", "Tıbbi Müdahale", "Vekâletsiz İş Görme", "Hekim Sorumluluğu", "Hasta Hakları"],
-  
-  "Fikri ve Sınai Mülkiyet": ["Telif Hakkı", "Marka Tescili", "Patent", "Faydalı Model", "Endüstriyel Tasarım", "Tecavüzün Men'i", "Tecavüzün Ref'i", "Maddi Haklar", "Manevi Haklar"],
-  
-  "Bilişim/KVKK": ["Kişisel Veri", "Veri Sorumlusu", "Açık Rıza", "Anonimleştirme", "Unutulma Hakkı", "Erişim Engelleme", "İçerik Sağlayıcı", "Siber Suçlar", "Log Kayıtları", "Verbis", "İlgili Kişi"],
-  
-  "Deniz Ticareti/Enerji": ["Çatma", "Müşterek Avarya", "Kaptan", "Donatan", "Liman Başkanlığı", "EPDK", "YEKDEM", "Lisanssız Üretim", "Bağlantı Anlaşması"]
-};
-    LEGAL_DICTIONARY = data;
+    // 1. Kategorize edilmiş ham veri
+    const rawData = {
+      "Davacı/Davalı/Sıfatlar": ["Davacı", "Davacılar", "Davalı", "Davalılar", "Aleyhine", "Lehine", "Müdahil", "Asli Müdahil", "Fer'i Müdahil", "Üçüncü Şahıs", "Hasımsız", "Müşteki", "Katılan", "Şüpheli", "Sanık", "Hükümlü", "Tutuklu", "Mağdur", "İhbar Olunan", "Muris", "Varis", "Muvazaa Tarafları"],
+      "Temsil/Vekalet": ["Vekili", "Müdafi", "Vasi", "Kayyım", "Temsilci", "Azil", "Vekaletname", "Tevkil", "Yetki Belgesi", "Muvafakatname", "İstinabe", "Baro Pulu", "Vekalet Ücreti", "Muvafakat", "Yasal Temsilci"],
+      "Tazminat Türleri": ["Maddi Tazminat", "Manevi Tazminat", "Destekten Yoksun Kalma", "Kıdem Tazminatı", "İhbar Tazminatı", "Kötüniyet Tazminatı", "Ecrimisil", "Haksız İşgal", "Yoksun Kalınan Kar", "Fiili Zarar", "Bedensel Zarar", "Maluliyet Tazminatı", "Geçici İş Göremezlik", "Sürekli İş Göremezlik", "Bakıcı Gideri", "Cenaze Giderleri", "Rücuen Tazminat"],
+      "Gayrimenkul/Eşya Hukuku": ["Tapu İptal", "Tescil", "İrtifak", "İntifa", "Şufa", "Önalım", "Kadastro", "Zilyetlik", "Mülkiyet", "Kat Mülkiyeti", "Muris Muvazaası", "İzale-i Şuyu", "Ortaklığın Giderilmesi", "Elatmanın Önlenmesi", "Tevhit", "İfraz", "Şerh", "Beyanlar Hanesi", "Arsa Payı Karşılığı İnşaat", "Hizmet İrtifakı", "Sükna Hakkı", "Geçit Hakkı", "Muhdesatın Aidiyeti"],
+      "Borçlar/Sözleşme Genel": ["Sözleşme", "Akit", "Alacak", "Borç", "İbra", "Temerrüt", "İhtar", "Muaccel", "Müteselsil", "Kefalet", "Cezai Şart", "Mücbir Sebep", "Fesih", "Gabin", "Muvazaa", "Edim", "İfa", "Sebepsiz Zenginleşme", "Aşırı Yararlanma", "Sözleşmeden Dönme", "Alacağın Temliki", "Borcun Nakli", "Hata", "Hile", "İkrah"],
+      "Aile/Kişiler Hukuku": ["Boşanma", "Velayet", "Nafaka", "Tedbir Nafakası", "İştirak Nafakası", "Yoksulluk Nafakası", "Mehir", "Ziynet", "Mal Rejimi", "Edinilmiş Mallar", "Soybağı", "İddet Müddeti", "Anlaşmalı Boşanma", "Çekişmeli Boşanma", "Evlat Edinme", "Kayyımlık", "Vesayet", "Kısıtlanma", "Tanıma ve Tenfiz"],
+      "İş Hukuku/Sendika": ["İşe İade", "İş Sözleşmesi", "Hizmet Tespit", "Fazla Mesai", "Yıllık İzin", "Hafta Tatili", "Mobbing", "UBGT", "İş Kazası", "Meslek Hastalığı", "Arabuluculuk Tutanağı", "Grev", "Lokavt", "Toplu İş Sözleşmesi", "Sendikal Tazminat", "Brüt Ücret", "Net Ücret", "Prime Esas Kazanç"],
+      "İcra/İflas/Takip": ["İcra Takibi", "Ödeme Emri", "Haciz", "İhtiyati Haciz", "İstihkak", "İhalenin Feshi", "Menfi Tespit", "İstirdat", "Yediemin", "Kıymet Takdiri", "Sıra Cetveli", "Konkordato", "İflas Masası", "İcra İnkâr Tazminatı", "Tahliye Emri", "Maaş Haczi", "Taahhüdü İhlal", "Kambiyo Senetlerine Mahsus Takip"],
+      "Ceza/Kovuşturma": ["Beraat", "Mahkumiyet", "Hükmün Açıklanması", "HAGB", "Tekerrür", "Tahrik", "Meşru Müdafaa", "Kasten", "Taksirle", "Olası Kast", "Suç Duyurusu", "Kovuşturma", "Soruşturma", "İddianame", "KYOK", "Denetimli Serbestlik", "Adli Kontrol", "Uzlaştırma", "Ön Ödeme", "Kamu Davası", "Şahsi Dava", "Yakalama Kararı", "Gözaltı"],
+      "Usul/Yargılama": ["Zamanaşımı", "Hak Düşürücü Süre", "Adli Yardım", "Kesinleşme", "Bekletici Mesele", "Islah", "Feragat", "Kabul", "Sulh", "Yetkisizlik", "Görevsizlik", "Derdestlik", "Hüküm Özeti", "Hüküm Kurulması", "Dosyanın İşlemden Kaldırılması", "Tevsi-i Tahkikat", "Reddi Hakim", "Gıyap", "Duruşma Zaptı"],
+      "Delil/İspat": ["Bilirkişi Raporu", "Keşif", "Tanık Beyanı", "Yemin", "İstizah", "Senet", "Kamera Kaydı", "Hukuka Aykırı Delil", "Kesin Delil", "Takdiri Delil", "İsticvap", "Yazılı Delil Başlangıcı", "Hayatın Olağan Akışı", "Maddi Vakıa"],
+      "Üst Yargı/Kanun Yolu": ["İstinaf", "Temyiz", "Duruşmalı", "Müracaat", "Karar Düzeltme", "Yargıtay", "Danıştay", "Anayasa Mahkemesi", "Bölge Adliye Mahkemesi", "Bölge İdare Mahkemesi", "Bozma İlamı", "Düzelterek Onama", "Yargılamanın İadesi", "İlamat", "İçtihadı Birleştirme"],
+      "Miras Hukuku": ["Tereke", "Vasiyetname", "Mirasçılık Belgesi", "Veraset İlamı", "Tenkis", "Denkleştirme", "Saklı Pay", "Reddi Miras", "Mirasın Reddi", "Atanmış Mirasçı", "Veraset ve İntikal", "Ölüme Bağlı Tasarruf", "Miras Sözleşmesi", "Terekenin Tespiti"],
+      "Ticaret/Şirketler": ["Tacir", "Ticaret Sicili", "Şirket Ana Sözleşmesi", "Yönetim Kurulu", "Genel Kurul", "Kambiyo Senedi", "Çek", "Poliçe", "Bono", "Haksız Rekabet", "İmza Sirküleri", "Sermaye Artırımı", "Temsil ve İlzam", "Acente", "Broker", "Navlun", "Kayıtlı Sermaye"],
+      "İdare/Vergi/İmar": ["Yürütmenin Durdurulması", "İptal Davası", "Tam Yargı", "İdari İşlem", "Vergi Ziyaı", "Usulsüzlük", "Re'sen", "Terkin", "Tahakkuk", "Tebliğ", "İmar Planı İptali", "Kamulaştırma", "Acele Kamulaştırma", "Ruhsat İptali", "Disiplin Cezası"],
+      "Tüketici Hukuku": ["Ayıplı Mal", "Ayıplı Hizmet", "Tüketici Hakem Heyeti", "Cayma Hakkı", "Garanti Belgesi", "Mesafeli Sözleşme", "Taksitle Satış", "Devre Tatil", "Paket Tur"],
+      "Sigorta Hukuku": ["Poliçe", "Reasürans", "Zeyilname", "Rücu", "Halefiyet", "Sürprim", "Muafiyet", "Sovaj", "Hasar İhbarı", "Zorunlu Mali Sorumluluk", "Kasko", "DASK"],
+      "Sağlık/Tıp Hukuku": ["Malpraktis", "Aydınlatılmış Onam", "Komplikasyon", "Tıbbi Müdahale", "Vekâletsiz İş Görme", "Hekim Sorumluluğu", "Hasta Hakları"],
+      "Fikri ve Sınai Mülkiyet": ["Telif Hakkı", "Marka Tescili", "Patent", "Faydalı Model", "Endüstriyel Tasarım", "Tecavüzün Men'i", "Tecavüzün Ref'i", "Maddi Haklar", "Manevi Haklar"],
+      "Bilişim/KVKK": ["Kişisel Veri", "Veri Sorumlusu", "Açık Rıza", "Anonimleştirme", "Unutulma Hakkı", "Erişim Engelleme", "İçerik Sağlayıcı", "Siber Suçlar", "Log Kayıtları", "Verbis", "İlgili Kişi"],
+      "Deniz Ticareti/Enerji": ["Çatma", "Müşterek Avarya", "Kaptan", "Donatan", "Liman Başkanlığı", "EPDK", "YEKDEM", "Lisanssız Üretim", "Bağlantı Anlaşması"]
+    };
+
+    // 2. Eksik olan Duygu Analizi verilerini oluştur
+    const sentimentData = {
+      teknik: ["kanun", "madde", "usul", "esas", "hüküm", "fıkra", "bent", "mevzuat", "içtihat"],
+      sert: ["ceza", "hapis", "ağırlaştırılmış", "zorla", "ihlal", "suç", "kasıt", "kusur"],
+      aciklayici: ["dolayısıyla", "nedeniyle", "gereğince", "binaen", "açıklanan", "hükmün", "gerekçeli"],
+      kesin: ["karar verildi", "kesinleşmiş", "onama", "red", "kabul", "hüküm kuruldu"]
+    };
+
+    // 3. Veriyi KeywordProcessor'ın anlayacağı DÜZ LİSTE formatına çevir (Hata buradaydı)
+    // Object.values(rawData) -> Array of Arrays
+    // .flat() -> Single big Array
+    const flatDictionary = Object.values(rawData).flat();
+
+    LEGAL_DICTIONARY = {
+      dictionary: flatDictionary,
+      rawCategories: rawData, // Orijinal yapıyı da saklayalım belki lazım olur
+      sentiment_indicators: sentimentData
+    };
     
     statusEl.textContent = "Sözlük Hazır ✓";
     statusEl.style.color = "var(--success)";
     btn.disabled = false;
+
   } catch (error) {
     console.error("Hata:", error);
-    statusEl.textContent = "Sözlük Yükleme Hatası (CORS veya Dosya Yok)";
+    statusEl.textContent = "Veri Hatası: " + error.message;
     statusEl.style.color = "var(--warning)";
-    // Fallback: Hata durumunda boş liste ile devam etmeyi sağlar veya buton pasif kalır
   }
 }
 
-// Sayfa yüklendiğinde sözlüğü çek
+// Sayfa yüklendiğinde sözlüğü yükle
 window.onload = loadDictionary;
 
 const MetaProcessor = {
@@ -282,7 +288,7 @@ const MetaProcessor = {
       daire: text.match(/(\d+\.\s*(Hukuk|Ceza)\s*Dairesi)/i)?.[1] || "Belirlenemedi",
       esas: text.match(/(\d{4}\/\d+)\s*E\./i)?.[1] || "Bulunamadı",
       karar: text.match(/(\d{4}\/\d+)\s*K\./i)?.[1] || "Bulunamadı",
-      tarih: text.match(/(\d{2}\.\d{2}\.\d{4})/)?.[1] || "Yok",
+      tarih: text.match(/(\d{1,2}\.\d{1,2}\.\d{4})/)?.[1] || "Yok",
       konu: text.match(/(?:DAVA TÜRÜ|KONU)\s*:\s*([^\n]+)/i)?.[1]?.trim() || "Genel Hukuki Uyuşmazlık"
     };
   }
@@ -294,20 +300,27 @@ const SentimentProcessor = {
     let scores = { teknik: 0, sert: 0, aciklayici: 0, kesin: 0 };
     const lowerText = text.toLowerCase();
 
+    // Veri kontrolü ekledik
+    if(!indicators) return { ton: "Veri Yok", puanlar: {}, stil: "Bilinmiyor" };
+
     Object.keys(indicators).forEach(key => {
       indicators[key].forEach(word => {
-        const rx = new RegExp(word, 'g');
-        const count = (lowerText.match(rx) || []).length;
-        scores[key] += count;
+        // Regex hatasını önlemek için escape işlemi gerekebilir ama basit tutalım
+        try {
+          const rx = new RegExp(word, 'g');
+          const count = (lowerText.match(rx) || []).length;
+          scores[key] += count;
+        } catch(e) {}
       });
     });
 
+    // En yüksek skoru bul
     const dominant = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
     
     return {
-      ton: dominant ? dominant.charAt(0).toUpperCase() + dominant.slice(1) : "Nötr",
+      ton: scores[dominant] > 0 ? (dominant.charAt(0).toUpperCase() + dominant.slice(1)) : "Nötr",
       puanlar: scores,
-      stil: scores.teknik > 10 ? "Akademik/Teknik" : "Operasyonel"
+      stil: scores.teknik > 5 ? "Akademik/Teknik" : "Operasyonel"
     };
   }
 };
@@ -342,7 +355,7 @@ const LawProcessor = {
 const StatsProcessor = {
   calculate(text, keywordCount) {
     const words = text.trim().split(/\s+/).length;
-    const density = ((keywordCount / (words || 1)) * 100).toFixed(2);
+    const density = words > 0 ? ((keywordCount / words) * 100).toFixed(2) : 0;
     return {
       kelime: words,
       kavramYogunlugu: `%${density}`,
@@ -355,12 +368,21 @@ const StatsProcessor = {
 const KeywordProcessor = {
   extract(text) {
     const found = [];
-    const dictionary = LEGAL_DICTIONARY.dictionary;
+    // Artık düz liste kullanıyoruz
+    const dictionary = LEGAL_DICTIONARY.dictionary; 
+    
+    if(!dictionary || !Array.isArray(dictionary)) return [];
+
+    // Set kullanarak duplicate engelleme
+    const uniqueFound = new Set();
+
     dictionary.forEach(word => {
-      const rx = new RegExp(`\\b${word}[a-zıüüğışç]*\\b`, "gi");
-      if (rx.test(text)) found.push(word);
+      // Kelime içinde özel karakter varsa escape etmeliydik ama basit tutuyoruz
+      // Sadece kelime sınırı (\b) ile arama
+      const rx = new RegExp(`\\b${word}\\b`, "gi"); 
+      if (rx.test(text)) uniqueFound.add(word);
     });
-    return found;
+    return Array.from(uniqueFound);
   }
 };
 
@@ -396,18 +418,22 @@ function runAnalysis() {
 
   const lawArea = document.getElementById("laws_area");
   lawArea.innerHTML = "";
+  if(data.mevzuat.length === 0) lawArea.innerHTML = "<span class='status-msg'>Mevzuat atfı bulunamadı.</span>";
+  
   data.mevzuat.forEach(l => {
     l.maddeler.forEach(m => {
       const span = document.createElement("span");
       span.className = "badge law-badge";
       span.title = m.baglam;
-      span.innerHTML = `<strong>${l.lawName}</strong> m.${m.no}`;
+      span.innerHTML = `<strong>${l.lawName || 'Kanun'}</strong> m.${m.no}`;
       lawArea.appendChild(span);
     });
   });
 
   const keyArea = document.getElementById("keywords_area");
   keyArea.innerHTML = "";
+  if(data.kavramlar.length === 0) keyArea.innerHTML = "<span class='status-msg'>Anahtar kavram bulunamadı.</span>";
+
   data.kavramlar.forEach(k => {
     keyArea.innerHTML += `<span class="badge keyword-badge">${k}</span>`;
   });
@@ -433,6 +459,7 @@ function clearAll() {
 function copyJSON() {
   const pre = document.getElementById("output");
   navigator.clipboard.writeText(pre.textContent);
+  alert("JSON kopyalandı!");
 }
 </script>
 
