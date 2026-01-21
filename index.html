@@ -115,6 +115,11 @@
       background: #dbeafe;
       transform: scale(1.05);
     }
+    .law-badge {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      color: #92400e;
+    }
 
     @media (max-width: 1024px) {
       .grid { grid-template-columns: 1fr; }
@@ -124,7 +129,7 @@
 </head>
 <body>
 
-<h1>⚖️ Legal Text Parser v2.0</h1>
+<h1>⚖️ Legal Text Parser v2.1</h1>
 
 <div class="grid">
   <textarea id="input" placeholder="Analiz edilecek karar metnini buraya yapıştırın..."></textarea>
@@ -136,7 +141,10 @@
 <div class="section-title">Temel Karar Verileri</div>
 <div class="badges" id="badges"></div>
 
-<div class="section-title">Hukuki Kavramlar, Kurumlar ve Mevzuat</div>
+<div class="section-title">Tespit Edilen Mevzuat (Kanun & Maddeler)</div>
+<div class="badges" id="laws"></div>
+
+<div class="section-title">Hukuki Kavramlar ve Kurumlar</div>
 <div class="badges" id="keywords"></div>
 
 <script>
@@ -163,9 +171,48 @@ function detectDecisionType(text) {
   return { ana: "Belirsiz", alt: null, ibare: null };
 }
 
+/* ================= MEVZUAT PARSER (HİYERARŞİK) ================= */
+function extractLaws(text) {
+  const laws = [];
+  // Örn: 5237 S. TÜRK CEZA KANUNU [ Madde 44 ] veya 5237 Sayılı Kanun m. 44
+  const lawPattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([^\[\n\.]+)(?:\[?\s*Madde\s*(\d+)\s*\]?|m\.\s*(\d+))?/gi;
+  
+  let match;
+  while ((match = lawPattern.exec(text)) !== null) {
+    const lawNo = match[1];
+    const lawName = match[2].trim();
+    const madde = match[3] || match[4];
+
+    let existingLaw = laws.find(l => l.lawNo === lawNo);
+    if (!existingLaw) {
+      existingLaw = { lawNo, lawName, maddeler: [] };
+      laws.push(existingLaw);
+    }
+    if (madde && !existingLaw.maddeler.includes(madde)) {
+      existingLaw.maddeler.push(madde);
+    }
+  }
+
+  // Alternatif kısa yakalama: TCK m. 44 gibi
+  const shortPattern = /\b(TMK|TBK|TCK|İİK|HMK|CMK|TTK)\s*(?:m\.|Madde)\s*(\d+)/gi;
+  while ((match = shortPattern.exec(text)) !== null) {
+    const lawName = match[1];
+    const madde = match[2];
+    let existingLaw = laws.find(l => l.lawName === lawName);
+    if (!existingLaw) {
+      existingLaw = { lawNo: null, lawName, maddeler: [] };
+      laws.push(existingLaw);
+    }
+    if (madde && !existingLaw.maddeler.includes(madde)) {
+      existingLaw.maddeler.push(madde);
+    }
+  }
+
+  return laws;
+}
+
 /* ================= ZENGİNLEŞTİRİLMİŞ ANAHTAR KELİME SİSTEMİ ================= */
 function extractKeywords(text) {
-  // Kavram grupları ve varyasyonları (Normalize edilmiş anahtar kelimeler)
   const legalDictionary = {
   "Davacı/Davalı/Sıfatlar": ["Davacı", "Davacılar", "Davalı", "Davalılar", "Aleyhine", "Lehine", "Müdahil", "Asli Müdahil", "Fer'i Müdahil", "Üçüncü Şahıs", "Hasımsız", "Müşteki", "Katılan", "Şüpheli", "Sanık", "Hükümlü", "Tutuklu", "Mağdur", "İhbar Olunan", "Muris", "Varis", "Muvazaa Tarafları"],
   
@@ -211,38 +258,17 @@ function extractKeywords(text) {
 };
 
   const foundKeywords = new Set();
-  
-  // Sözlük taraması
   for (const [category, variations] of Object.entries(legalDictionary)) {
     for (const word of variations) {
-      // Kelimenin ek almış hallerini de yakalamak için esnek regex (Örn: Tazminat, Tazminata, Tazminatın)
       const regex = new RegExp(`\\b${word}[a-zıüüğışç]*\\b`, "gi");
-      if (regex.test(text)) {
-        foundKeywords.add(word); // Bulunan varyasyonu değil, ana terimi ekle
-      }
+      if (regex.test(text)) foundKeywords.add(word);
     }
   }
-
-  // Kanun ve Madde Tespiti (Gelişmiş)
-  const codeMatches = text.match(/\b(TMK|TBK|TCK|İİK|HMK|CMK|TTK|İşK|DMK)\b/g);
-  if (codeMatches) codeMatches.forEach(c => foundKeywords.add(c));
-
-  const articleMatches = text.match(/(Madde|m\.)\s*\d+/gi);
-  if (articleMatches) articleMatches.forEach(m => foundKeywords.add(m.toUpperCase().replace(/\s+/g, ' ')));
-
-  // Parasal Değer Tespiti (Önemli varyasyon)
-  if (/\b\d+([.,]\d+)?\s*(TL|Türk Lirası)\b/i.test(text)) {
-    foundKeywords.add("Parasal Değer/Bedel");
-  }
-
   return Array.from(foundKeywords).sort();
 }
 
 /* ================= ANA ANALİZ MOTORU ================= */
 function extractAllLegalInfo(text) {
-  const original = text;
-
-  // Temel Regex Meta Verileri
   const meta = {
     daire: text.match(/(\d+\.\s*(Hukuk|Ceza)\s*Dairesi)/i)?.[1] || null,
     esas: text.match(/(\d{4}\/\d+)\s*E\./i)?.[1] || null,
@@ -251,17 +277,14 @@ function extractAllLegalInfo(text) {
     tarih: text.match(/(\d{2}\.\d{2}\.\d{4})/)?.[1] || null
   };
 
-  // Karar Başlığı / Konu tespiti
-  const konuMatch = original.match(/DAVA TÜRÜ\s*:\s*([^\n]+)/i) || 
-                   original.match(/KONU\s*:\s*([^\n]+)/i);
-  
-  const davaTuru = konuMatch ? konuMatch[1].trim() : null;
+  const konuMatch = text.match(/DAVA TÜRÜ\s*:\s*([^\n]+)/i) || text.match(/KONU\s*:\s*([^\n]+)/i);
 
   return {
     kimlik: meta,
     analiz: {
       kararTuru: detectDecisionType(text),
-      davaTuru: davaTuru,
+      davaTuru: konuMatch ? konuMatch[1].trim() : null,
+      mevzuat: extractLaws(text),
       anahtarKavramlar: extractKeywords(text)
     }
   };
@@ -274,14 +297,13 @@ function parseText() {
 
   const result = extractAllLegalInfo(input);
 
-  // JSON Alanını Güncelle
   document.getElementById("output").textContent = JSON.stringify(result, null, 2);
 
-  // Badge Alanlarını Temizle
   const basicContainer = document.getElementById("badges");
+  const lawContainer = document.getElementById("laws");
   const keywordContainer = document.getElementById("keywords");
-  basicContainer.innerHTML = "";
-  keywordContainer.innerHTML = "";
+  
+  [basicContainer, lawContainer, keywordContainer].forEach(c => c.innerHTML = "");
 
   function addBadge(container, label, value, customClass = "badge") {
     if (!value) return;
@@ -291,19 +313,20 @@ function parseText() {
     container.appendChild(span);
   }
 
-  // Temel Verileri Bas
+  // Temel Bilgiler
   addBadge(basicContainer, "Esas", result.kimlik.esas);
   addBadge(basicContainer, "Karar", result.kimlik.karar);
-  addBadge(basicContainer, "Tarih", result.kimlik.tarih);
-  addBadge(basicContainer, "Mahkeme", result.kimlik.mahkemesi);
-  addBadge(basicContainer, "Daire", result.kimlik.daire);
   addBadge(basicContainer, "Tür", result.analiz.kararTuru.ana);
-  
-  if (result.analiz.davaTuru) {
-    addBadge(basicContainer, "Konu", result.analiz.davaTuru);
-  }
+  addBadge(basicContainer, "Konu", result.analiz.davaTuru);
 
-  // Anahtar Kelimeleri Bas
+  // Mevzuat (İlişkili Yapı)
+  result.analiz.mevzuat.forEach(law => {
+    const maddelerText = law.maddeler.length > 0 ? ` (Madde: ${law.maddeler.join(', ')})` : "";
+    const label = law.lawNo ? `${law.lawNo} S. ${law.lawName}` : law.lawName;
+    addBadge(lawContainer, null, label + maddelerText, "badge law-badge");
+  });
+
+  // Kavramlar
   result.analiz.anahtarKavramlar.forEach(k => {
     addBadge(keywordContainer, null, k, "badge keyword-badge");
   });
