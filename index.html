@@ -214,10 +214,52 @@ async function loadDictionary() {
   
   try {
     // Not: Gerçek bir ortamda 'legal-dictionary.json' dosyası aynı dizinde olmalı.
-    const response = await fetch('legal-dictionary.json');
-    if (!response.ok) throw new Error('Dosya yüklenemedi');
+    // const response = await fetch('legal-dictionary.json');
+    // if (!response.ok) throw new Error('Dosya yüklenemedi');
     
-    const data = await response.json();
+    const data = {
+  "Davacı/Davalı/Sıfatlar": ["Davacı", "Davacılar", "Davalı", "Davalılar", "Aleyhine", "Lehine", "Müdahil", "Asli Müdahil", "Fer'i Müdahil", "Üçüncü Şahıs", "Hasımsız", "Müşteki", "Katılan", "Şüpheli", "Sanık", "Hükümlü", "Tutuklu", "Mağdur", "İhbar Olunan", "Muris", "Varis", "Muvazaa Tarafları"],
+  
+  "Temsil/Vekalet": ["Vekili", "Müdafi", "Vasi", "Kayyım", "Temsilci", "Azil", "Vekaletname", "Tevkil", "Yetki Belgesi", "Muvafakatname", "İstinabe", "Baro Pulu", "Vekalet Ücreti", "Muvafakat", "Yasal Temsilci"],
+  
+  "Tazminat Türleri": ["Maddi Tazminat", "Manevi Tazminat", "Destekten Yoksun Kalma", "Kıdem Tazminatı", "İhbar Tazminatı", "Kötüniyet Tazminatı", "Ecrimisil", "Haksız İşgal", "Yoksun Kalınan Kar", "Fiili Zarar", "Bedensel Zarar", "Maluliyet Tazminatı", "Geçici İş Göremezlik", "Sürekli İş Göremezlik", "Bakıcı Gideri", "Cenaze Giderleri", "Rücuen Tazminat"],
+  
+  "Gayrimenkul/Eşya Hukuku": ["Tapu İptal", "Tescil", "İrtifak", "İntifa", "Şufa", "Önalım", "Kadastro", "Zilyetlik", "Mülkiyet", "Kat Mülkiyeti", "Muris Muvazaası", "İzale-i Şuyu", "Ortaklığın Giderilmesi", "Elatmanın Önlenmesi", "Tevhit", "İfraz", "Şerh", "Beyanlar Hanesi", "Arsa Payı Karşılığı İnşaat", "Hizmet İrtifakı", "Sükna Hakkı", "Geçit Hakkı", "Muhdesatın Aidiyeti"],
+  
+  "Borçlar/Sözleşme Genel": ["Sözleşme", "Akit", "Alacak", "Borç", "İbra", "Temerrüt", "İhtar", "Muaccel", "Müteselsil", "Kefalet", "Cezai Şart", "Mücbir Sebep", "Fesih", "Gabin", "Muvazaa", "Edim", "İfa", "Sebepsiz Zenginleşme", "Aşırı Yararlanma", "Sözleşmeden Dönme", "Alacağın Temliki", "Borcun Nakli", "Hata", "Hile", "İkrah"],
+  
+  "Aile/Kişiler Hukuku": ["Boşanma", "Velayet", "Nafaka", "Tedbir Nafakası", "İştirak Nafakası", "Yoksulluk Nafakası", "Mehir", "Ziynet", "Mal Rejimi", "Edinilmiş Mallar", "Soybağı", "İddet Müddeti", "Anlaşmalı Boşanma", "Çekişmeli Boşanma", "Evlat Edinme", "Kayyımlık", "Vesayet", "Kısıtlanma", "Tanıma ve Tenfiz"],
+  
+  "İş Hukuku/Sendika": ["İşe İade", "İş Sözleşmesi", "Hizmet Tespit", "Fazla Mesai", "Yıllık İzin", "Hafta Tatili", "Mobbing", "UBGT", "İş Kazası", "Meslek Hastalığı", "Arabuluculuk Tutanağı", "Grev", "Lokavt", "Toplu İş Sözleşmesi", "Sendikal Tazminat", "Brüt Ücret", "Net Ücret", "Prime Esas Kazanç"],
+  
+  "İcra/İflas/Takip": ["İcra Takibi", "Ödeme Emri", "Haciz", "İhtiyati Haciz", "İstihkak", "İhalenin Feshi", "Menfi Tespit", "İstirdat", "Yediemin", "Kıymet Takdiri", "Sıra Cetveli", "Konkordato", "İflas Masası", "İcra İnkâr Tazminatı", "Tahliye Emri", "Maaş Haczi", "Taahhüdü İhlal", "Kambiyo Senetlerine Mahsus Takip"],
+  
+  "Ceza/Kovuşturma": ["Beraat", "Mahkumiyet", "Hükmün Açıklanması", "HAGB", "Tekerrür", "Tahrik", "Meşru Müdafaa", "Kasten", "Taksirle", "Olası Kast", "Suç Duyurusu", "Kovuşturma", "Soruşturma", "İddianame", "KYOK", "Denetimli Serbestlik", "Adli Kontrol", "Uzlaştırma", "Ön Ödeme", "Kamu Davası", "Şahsi Dava", "Yakalama Kararı", "Gözaltı"],
+  
+  "Usul/Yargılama": ["Zamanaşımı", "Hak Düşürücü Süre", "Adli Yardım", "Kesinleşme", "Bekletici Mesele", "Islah", "Feragat", "Kabul", "Sulh", "Yetkisizlik", "Görevsizlik", "Derdestlik", "Hüküm Özeti", "Hüküm Kurulması", "Dosyanın İşlemden Kaldırılması", "Tevsi-i Tahkikat", "Reddi Hakim", "Gıyap", "Duruşma Zaptı"],
+  
+  "Delil/İspat": ["Bilirkişi Raporu", "Keşif", "Tanık Beyanı", "Yemin", "İstizah", "Senet", "Kamera Kaydı", "Hukuka Aykırı Delil", "Kesin Delil", "Takdiri Delil", "İsticvap", "Yazılı Delil Başlangıcı", "Hayatın Olağan Akışı", "Maddi Vakıa"],
+  
+  "Üst Yargı/Kanun Yolu": ["İstinaf", "Temyiz", "Duruşmalı", "Müracaat", "Karar Düzeltme", "Yargıtay", "Danıştay", "Anayasa Mahkemesi", "Bölge Adliye Mahkemesi", "Bölge İdare Mahkemesi", "Bozma İlamı", "Düzelterek Onama", "Yargılamanın İadesi", "İlamat", "İçtihadı Birleştirme"],
+  
+  "Miras Hukuku": ["Tereke", "Vasiyetname", "Mirasçılık Belgesi", "Veraset İlamı", "Tenkis", "Denkleştirme", "Saklı Pay", "Reddi Miras", "Mirasın Reddi", "Atanmış Mirasçı", "Veraset ve İntikal", "Ölüme Bağlı Tasarruf", "Miras Sözleşmesi", "Terekenin Tespiti"],
+  
+  "Ticaret/Şirketler": ["Tacir", "Ticaret Sicili", "Şirket Ana Sözleşmesi", "Yönetim Kurulu", "Genel Kurul", "Kambiyo Senedi", "Çek", "Poliçe", "Bono", "Haksız Rekabet", "İmza Sirküleri", "Sermaye Artırımı", "Temsil ve İlzam", "Acente", "Broker", "Navlun", "Kayıtlı Sermaye"],
+  
+  "İdare/Vergi/İmar": ["Yürütmenin Durdurulması", "İptal Davası", "Tam Yargı", "İdari İşlem", "Vergi Ziyaı", "Usulsüzlük", "Re'sen", "Terkin", "Tahakkuk", "Tebliğ", "İmar Planı İptali", "Kamulaştırma", "Acele Kamulaştırma", "Ruhsat İptali", "Disiplin Cezası"],
+  
+  "Tüketici Hukuku": ["Ayıplı Mal", "Ayıplı Hizmet", "Tüketici Hakem Heyeti", "Cayma Hakkı", "Garanti Belgesi", "Mesafeli Sözleşme", "Taksitle Satış", "Devre Tatil", "Paket Tur"],
+  
+  "Sigorta Hukuku": ["Poliçe", "Reasürans", "Zeyilname", "Rücu", "Halefiyet", "Sürprim", "Muafiyet", "Sovaj", "Hasar İhbarı", "Zorunlu Mali Sorumluluk", "Kasko", "DASK"],
+  
+  "Sağlık/Tıp Hukuku": ["Malpraktis", "Aydınlatılmış Onam", "Komplikasyon", "Tıbbi Müdahale", "Vekâletsiz İş Görme", "Hekim Sorumluluğu", "Hasta Hakları"],
+  
+  "Fikri ve Sınai Mülkiyet": ["Telif Hakkı", "Marka Tescili", "Patent", "Faydalı Model", "Endüstriyel Tasarım", "Tecavüzün Men'i", "Tecavüzün Ref'i", "Maddi Haklar", "Manevi Haklar"],
+  
+  "Bilişim/KVKK": ["Kişisel Veri", "Veri Sorumlusu", "Açık Rıza", "Anonimleştirme", "Unutulma Hakkı", "Erişim Engelleme", "İçerik Sağlayıcı", "Siber Suçlar", "Log Kayıtları", "Verbis", "İlgili Kişi"],
+  
+  "Deniz Ticareti/Enerji": ["Çatma", "Müşterek Avarya", "Kaptan", "Donatan", "Liman Başkanlığı", "EPDK", "YEKDEM", "Lisanssız Üretim", "Bağlantı Anlaşması"]
+};
     LEGAL_DICTIONARY = data;
     
     statusEl.textContent = "Sözlük Hazır ✓";
