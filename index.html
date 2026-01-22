@@ -32,8 +32,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
     }
 
     .grid {
@@ -156,36 +154,15 @@
 
     .status-msg { font-size: 12px; color: var(--accent); font-weight: 500; }
 
-    .nav-link {
-      font-size: 14px;
-      color: var(--accent);
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      background: #eff6ff;
-      transition: all 0.2s;
-      margin-left: 12px;
-      font-weight: 500;
-    }
-
-    .nav-link:hover {
-      background: #dbeafe;
-      transform: translateY(-1px);
-    }
-
     @media (max-width: 1024px) {
       .grid { grid-template-columns: 1fr; }
-      h1 { flex-direction: column; align-items: flex-start; gap: 12px; }
     }
   </style>
 </head>
 <body>
 
 <h1>
-  <span>
-    ⚖️ Legal Text Parser v4.2
-    <a href="law-parser.html" class="nav-link">📄 Kanun Parçalayıcı</a>
-  </span>
+  ⚖️ Legal Text Parser v4.2
   <span id="loader_status" class="status-msg">Sözlük Yükleniyor...</span>
 </h1>
 

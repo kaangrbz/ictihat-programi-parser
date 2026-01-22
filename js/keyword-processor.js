@@ -12,26 +12,12 @@ export const KeywordProcessor = {
 
     // Set kullanarak duplicate engelleme
     const uniqueFound = new Set();
-    
-    // Önce çoklu kelimeli kavramları kontrol et (daha uzun olanlar önce)
-    const sortedDict = [...dictionary].sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length);
 
-    sortedDict.forEach(word => {
-      // Çoklu kelimeli kavramlar için farklı yaklaşım
-      if (word.includes(' ')) {
-        // Çoklu kelimeli: tam eşleşme ara
-        const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const rx = new RegExp(escaped, "gi");
-        if (rx.test(text)) uniqueFound.add(word);
-      } else {
-        // Tek kelimeli: Türkçe karakterleri de destekleyen kelime sınırı ile ara
-        // \b Türkçe karakterlerle sorunlu olabilir, bu yüzden manuel kelime sınırı kontrolü yap
-        const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Kelime sınırı: başta veya harf olmayan karakter sonrası, sonda veya harf olmayan karakter öncesi
-        // Türkçe karakterleri de harf olarak kabul et
-        const rx = new RegExp(`(^|[^A-Za-zÇĞİÖŞÜçğıöşü])${escaped}([^A-Za-zÇĞİÖŞÜçğıöşü]|$)`, "gi"); 
-        if (rx.test(text)) uniqueFound.add(word);
-      }
+    dictionary.forEach(word => {
+      // Kelime içinde özel karakter varsa escape etmeliydik ama basit tutuyoruz
+      // Sadece kelime sınırı (\b) ile arama
+      const rx = new RegExp(`\\b${word}\\b`, "gi"); 
+      if (rx.test(text)) uniqueFound.add(word);
     });
     return Array.from(uniqueFound);
   }

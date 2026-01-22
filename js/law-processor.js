@@ -11,16 +11,7 @@ export const LawProcessor = {
     // Tam kanun referansı: "5237 S. TCK Madde 124" veya "5237 S. TCK [ Madde 124 ]" gibi
     // Mülga kanun desteği: "765 S. TÜRK CEZA KANUNU (MÜLGA)" gibi parantezli ifadeleri yakala
     // Köşeli parantez desteği: "[ Madde 124 ]" formatını da yakala
-    // Pattern: kanun no + kanun adı + (opsiyonel parantez) + (opsiyonel madde)
-    // Önce köşeli parantez formatını kontrol et, sonra normal formatı
-    const bracketPattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü\s]+?)(?:\s*\(([^)]+)\))?\s*\[\s*Madde\s+(\d+)\s*\]/gi;
-    const normalPattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü\s]+?)(?:\s*\(([^)]+)\))?\s*(?:Madde\s+(\d+)|m\.\s+(\d+))/gi;
-    const noMaddePattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü\s]+?)(?:\s*\(([^)]+)\))?\s*$/gi;
-    
-    // Mülga kanunlar için özel pattern (parantez zorunlu, kanun adı parantezden önce)
-    // Köşeli parantez formatı için kullanıcının önerdiği pattern
-    const mulgaBracketPattern = /^(\d+)\s*S\.\s*(.+?)(?:\s*\((MÜLGA)\))?\s*\[\s*Madde\s*(\d+)\s*\]/i;
-    const mulgaNormalPattern = /^(\d+)\s*S\.\s*(.+?)(?:\s*\((MÜLGA)\))?\s*(?:Madde\s+(\d+)|m\.\s+(\d+))/i;
+    const fullPattern = /(\d{4})\s*S(?:ayılı)?\.?\s*([^(]+?)(?:\s*\(([^)]+)\))?(?:\s+Madde\s+(\d+)|m\.\s+(\d+)|\[\s*Madde\s+(\d+)\s*\])?/gi;
     
     // Kısa referanslar: "TCK m.124" veya "TCK Madde 124"
     const shortRx = /\b(TMK|TBK|TCK|İİK|HMK|CMK|TTK|İşK|DMK)\s*(?:m\.|Madde)\s*(\d+)/gi;
@@ -29,78 +20,19 @@ export const LawProcessor = {
     lines.forEach((line, lineIndex) => {
       const lineNum = lineIndex + 1;
       
-      // Önce mülga kanunları kontrol et (parantez içinde bilgi var)
+      // Tam kanun referanslarını yakala (mülga desteği ile)
       let m;
-      const isMulgaLine = line.includes('(MÜLGA)') || (line.includes('(') && /\(\s*[A-Z]/.test(line));
-      
-      if (isMulgaLine) {
-        // Önce köşeli parantez formatını kontrol et
-        m = mulgaBracketPattern.exec(line);
-        if (m) {
-          const lawNo = m[1];
-          let lawName = m[2] ? m[2].trim() : '';
-          const mulgaInfo = m[3] || null;
-          const maddeNo = m[4] || null;
-          
-          if (lawName && lawName.length > 1) {
-            this.addLaw(laws, lawNo, lawName, maddeNo, line, lineNum, mulgaInfo);
-          }
-        } else {
-          // Sonra normal formatı kontrol et
-          m = mulgaNormalPattern.exec(line);
-          if (m) {
-            const lawNo = m[1];
-            let lawName = m[2] ? m[2].trim() : '';
-            const mulgaInfo = m[3] || null;
-            const maddeNo = m[4] || m[5] || null;
-            
-            if (lawName && lawName.length > 1) {
-              this.addLaw(laws, lawNo, lawName, maddeNo, line, lineNum, mulgaInfo);
-            }
-          }
-        }
-      } else {
-        // Normal kanun referanslarını yakala - önce köşeli parantez formatı
-        bracketPattern.lastIndex = 0;
-        while ((m = bracketPattern.exec(line)) !== null) {
-          const lawNo = m[1];
-          let lawName = m[2] ? m[2].trim() : '';
-          const mulgaInfo = m[3] || null;
-          const maddeNo = m[4] || null;
-          
-          if (lawName && lawName.length > 1) {
-            this.addLaw(laws, lawNo, lawName, maddeNo, line, lineNum, mulgaInfo);
-          }
-        }
+      while ((m = fullPattern.exec(line)) !== null) {
+        const lawNo = m[1];
+        const lawName = m[2].trim();
+        const mulgaInfo = m[3] || null; // Parantez içi bilgi (MÜLGA, Yürürlükten Kaldırılmış vb.)
+        // Madde numarası: normal format (m[4]), kısa format (m[5]), veya köşeli parantez formatı (m[6])
+        const maddeNo = m[4] || m[5] || m[6] || null;
         
-        // Sonra normal format (Madde veya m.)
-        normalPattern.lastIndex = 0;
-        while ((m = normalPattern.exec(line)) !== null) {
-          const lawNo = m[1];
-          let lawName = m[2] ? m[2].trim() : '';
-          const mulgaInfo = m[3] || null;
-          const maddeNo = m[4] || m[5] || null;
-          
-          if (lawName && lawName.length > 1) {
-            this.addLaw(laws, lawNo, lawName, maddeNo, line, lineNum, mulgaInfo);
-          }
-        }
-        
-        // Son olarak madde numarası olmayan formatları kontrol et
-        noMaddePattern.lastIndex = 0;
-        while ((m = noMaddePattern.exec(line)) !== null) {
-          const lawNo = m[1];
-          let lawName = m[2] ? m[2].trim() : '';
-          const mulgaInfo = m[3] || null;
-          
-          if (lawName && lawName.length > 1) {
-            this.addLaw(laws, lawNo, lawName, null, line, lineNum, mulgaInfo);
-          }
-        }
+        this.addLaw(laws, lawNo, lawName, maddeNo, line, lineNum, mulgaInfo);
       }
       
       // Kısa referansları yakala
-      shortRx.lastIndex = 0;
       while ((m = shortRx.exec(line)) !== null) {
         this.addLaw(laws, null, m[1], m[2], line, lineNum, null);
       }
