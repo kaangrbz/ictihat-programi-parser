@@ -14,9 +14,9 @@ export const LegalLogicProcessor = {
       /\bhagb\b/gi,
       /h\.\s*a\.\s*g\.\s*b\./gi
     ];
-    const hgabResult = this.findPattern(lines, hgabPatterns, 'contains_hgab');
-    flags.contains_hgab = hgabResult.found;
-    details.contains_hgab = hgabResult;
+    const hgabResult = this.findPattern(lines, hgabPatterns, 'hagb_karari');
+    flags.hagb_karari = hgabResult.found;
+    details.hagb_karari = hgabResult;
     
     // Bozma kontrolü
     const bozmaPatterns = [
@@ -26,9 +26,9 @@ export const LegalLogicProcessor = {
       /bozulmasına/gi,
       /bozma\s+kararı/gi
     ];
-    const bozmaResult = this.findPattern(lines, bozmaPatterns, 'is_bozma');
-    flags.is_bozma = bozmaResult.found;
-    details.is_bozma = bozmaResult;
+    const bozmaResult = this.findPattern(lines, bozmaPatterns, 'bozma_karari');
+    flags.bozma_karari = bozmaResult.found;
+    details.bozma_karari = bozmaResult;
     
     // Onama kontrolü
     const onamaPatterns = [
@@ -38,9 +38,9 @@ export const LegalLogicProcessor = {
       /onandığına/gi,
       /onama\s+kararı/gi
     ];
-    const onamaResult = this.findPattern(lines, onamaPatterns, 'is_onama');
-    flags.is_onama = onamaResult.found;
-    details.is_onama = onamaResult;
+    const onamaResult = this.findPattern(lines, onamaPatterns, 'onama_karari');
+    flags.onama_karari = onamaResult.found;
+    details.onama_karari = onamaResult;
     
     // Red kontrolü
     const redPatterns = [
@@ -50,9 +50,9 @@ export const LegalLogicProcessor = {
       /reddedilmesi/gi,
       /red\s+kararı/gi
     ];
-    const redResult = this.findPattern(lines, redPatterns, 'is_red');
-    flags.is_red = redResult.found;
-    details.is_red = redResult;
+    const redResult = this.findPattern(lines, redPatterns, 'red_karari');
+    flags.red_karari = redResult.found;
+    details.red_karari = redResult;
     
     // Kabul kontrolü
     const kabulPatterns = [
@@ -61,9 +61,9 @@ export const LegalLogicProcessor = {
       /kabulüne/gi,
       /kabul\s+kararı/gi
     ];
-    const kabulResult = this.findPattern(lines, kabulPatterns, 'is_kabul');
-    flags.is_kabul = kabulResult.found;
-    details.is_kabul = kabulResult;
+    const kabulResult = this.findPattern(lines, kabulPatterns, 'kabul_karari');
+    flags.kabul_karari = kabulResult.found;
+    details.kabul_karari = kabulResult;
     
     // Beraat kontrolü
     const beraatPatterns = [
@@ -71,9 +71,9 @@ export const LegalLogicProcessor = {
       /beraatine/gi,
       /beraat\s+kararı/gi
     ];
-    const beraatResult = this.findPattern(lines, beraatPatterns, 'is_beraat');
-    flags.is_beraat = beraatResult.found;
-    details.is_beraat = beraatResult;
+    const beraatResult = this.findPattern(lines, beraatPatterns, 'beraat_karari');
+    flags.beraat_karari = beraatResult.found;
+    details.beraat_karari = beraatResult;
     
     // Zamanaşımı kontrolü
     const zamanaşımıPatterns = [

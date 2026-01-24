@@ -8,6 +8,7 @@ import { LawProcessor } from './law-processor.js';
 import { StatsProcessor } from './stats-processor.js';
 import { KeywordProcessor } from './keyword-processor.js';
 import { LegalLogicProcessor } from './legal-logic-processor.js';
+import { PartyProcessor } from './party-processor.js';
 
 export const LegalAnalyzer = {
   analyze(text) {
@@ -15,10 +16,11 @@ export const LegalAnalyzer = {
     const keywords = KeywordProcessor.extract(text);
     return {
       kimlik: MetaProcessor.extract(text),
-      duyguAnalizi: SentimentProcessor.analyze(text),
+      duyguAnalizi: null, // Pasif
       mevzuat: LawProcessor.parse(text),
       hukukiMantik: LegalLogicProcessor.analyze(text),
       kavramlar: keywords,
+      taraflar: PartyProcessor.extract(text),
       istatistikler: StatsProcessor.calculate(text, keywords.length),
       analizTarihi: new Date().toLocaleString('tr-TR')
     };

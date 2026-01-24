@@ -13,9 +13,9 @@ export function runAnalysis() {
 
   renderArea("stats_area", data.istatistikler);
   
+  // Duygu analizi pasif
   const sentArea = document.getElementById("sentiment_area");
-  sentArea.innerHTML = `<span class="badge sentiment-badge"><span class="badge-label">Baskın Ton:</span><span class="badge-value">${data.duyguAnalizi.ton}</span></span>`;
-  sentArea.innerHTML += `<span class="badge sentiment-badge"><span class="badge-label">Yazım Stili:</span><span class="badge-value">${data.duyguAnalizi.stil}</span></span>`;
+  sentArea.innerHTML = "";
 
   renderArea("meta_area", data.kimlik);
 
@@ -75,6 +75,20 @@ export function runAnalysis() {
   const logicArea = document.getElementById("legal_logic_area");
   logicArea.innerHTML = "";
   
+  // Flag açıklamaları (Türkçe)
+  const flagLabels = {
+    'hagb_karari': 'Hükmün Açıklanmasının Geri Bırakılması (HAGB)',
+    'bozma_karari': 'Bozma Kararı',
+    'onama_karari': 'Onama Kararı',
+    'red_karari': 'Red Kararı',
+    'kabul_karari': 'Kabul Kararı',
+    'beraat_karari': 'Beraat Kararı',
+    'zamanaşımı': 'Zamanaşımı',
+    'yetkisizlik': 'Yetkisizlik',
+    'görevsizlik': 'Görevsizlik',
+    'derdestlik': 'Derdestlik'
+  };
+  
   if (data.hukukiMantik && data.hukukiMantik.flags) {
     const flags = data.hukukiMantik.flags;
     const details = data.hukukiMantik.details;
@@ -86,16 +100,20 @@ export function runAnalysis() {
         const span = document.createElement("span");
         span.className = "badge sentiment-badge";
         
-        let titleText = `${key}: Bulundu`;
+        const label = flagLabels[key] || key;
+        let titleText = `${label}: Bulundu`;
         if (detail && detail.context) {
-          titleText += `\nBağlam: ${detail.context}`;
+          titleText += `\n\nBağlam:\n${detail.context}`;
         }
         if (detail && detail.lineNo) {
-          titleText += `\nSatır: ${detail.lineNo}`;
+          titleText += `\n\nSatır No: ${detail.lineNo}`;
+        }
+        if (detail && detail.satirIcerigi) {
+          titleText += `\n\nSatır İçeriği:\n${detail.satirIcerigi.substring(0, 200)}${detail.satirIcerigi.length > 200 ? '...' : ''}`;
         }
         
         span.title = titleText;
-        span.innerHTML = `<span class="badge-label">${key}:</span><span class="badge-value">✓</span>`;
+        span.innerHTML = `<span class="badge-label">${label}:</span><span class="badge-value">✓</span>`;
         logicArea.appendChild(span);
       }
     });
@@ -107,6 +125,98 @@ export function runAnalysis() {
     }
   } else {
     logicArea.innerHTML = "<span class='status-msg'>Hukuki mantık analizi yapılamadı.</span>";
+  }
+
+  // Taraflar ve Talepler
+  const partyArea = document.getElementById("taraflar_area");
+  partyArea.innerHTML = "";
+  
+  if (data.taraflar) {
+    // Davacılar
+    if (data.taraflar.davacilar && data.taraflar.davacilar.length > 0) {
+      data.taraflar.davacilar.forEach(davaci => {
+        const span = document.createElement("span");
+        span.className = "badge keyword-badge";
+        let titleText = `Davacı: ${davaci.isim}`;
+        if (davaci.baglam) {
+          titleText += `\n\nBağlam:\n${davaci.baglam}`;
+        }
+        if (davaci.satirNo) {
+          titleText += `\n\nSatır No: ${davaci.satirNo}`;
+        }
+        span.title = titleText;
+        span.innerHTML = `<span class="badge-label">Davacı:</span><span class="badge-value">${davaci.isim}</span>`;
+        partyArea.appendChild(span);
+      });
+    }
+    
+    // Davalılar
+    if (data.taraflar.davalilar && data.taraflar.davalilar.length > 0) {
+      data.taraflar.davalilar.forEach(davali => {
+        const span = document.createElement("span");
+        span.className = "badge keyword-badge";
+        let titleText = `Davalı: ${davali.isim}`;
+        if (davali.baglam) {
+          titleText += `\n\nBağlam:\n${davali.baglam}`;
+        }
+        if (davali.satirNo) {
+          titleText += `\n\nSatır No: ${davali.satirNo}`;
+        }
+        span.title = titleText;
+        span.innerHTML = `<span class="badge-label">Davalı:</span><span class="badge-value">${davali.isim}</span>`;
+        partyArea.appendChild(span);
+      });
+    }
+    
+    // Vekiller
+    if (data.taraflar.vekiller && data.taraflar.vekiller.length > 0) {
+      data.taraflar.vekiller.forEach(vekil => {
+        const span = document.createElement("span");
+        span.className = "badge keyword-badge";
+        let titleText = `${vekil.tip || 'Vekil'}: ${vekil.isim}`;
+        if (vekil.baglam) {
+          titleText += `\n\nBağlam:\n${vekil.baglam}`;
+        }
+        if (vekil.satirNo) {
+          titleText += `\n\nSatır No: ${vekil.satirNo}`;
+        }
+        span.title = titleText;
+        span.innerHTML = `<span class="badge-label">${vekil.tip || 'Vekil'}:</span><span class="badge-value">${vekil.isim}</span>`;
+        partyArea.appendChild(span);
+      });
+    }
+    
+    // Talepler
+    if (data.taraflar.talepler && data.taraflar.talepler.length > 0) {
+      data.taraflar.talepler.forEach(talep => {
+        const span = document.createElement("span");
+        span.className = "badge sentiment-badge";
+        let titleText = `${talep.tip || 'Talep'}`;
+        if (talep.icerik) {
+          titleText += `\n\nİçerik:\n${talep.icerik.substring(0, 200)}${talep.icerik.length > 200 ? '...' : ''}`;
+        }
+        if (talep.baglam) {
+          titleText += `\n\nBağlam:\n${talep.baglam}`;
+        }
+        if (talep.satirNo) {
+          titleText += `\n\nSatır No: ${talep.satirNo}`;
+        }
+        span.title = titleText;
+        const shortIcerik = talep.icerik ? talep.icerik.substring(0, 50) + (talep.icerik.length > 50 ? '...' : '') : '';
+        span.innerHTML = `<span class="badge-label">${talep.tip || 'Talep'}:</span><span class="badge-value">${shortIcerik}</span>`;
+        partyArea.appendChild(span);
+      });
+    }
+    
+    // Hiçbir şey bulunamadıysa
+    if ((!data.taraflar.davacilar || data.taraflar.davacilar.length === 0) &&
+        (!data.taraflar.davalilar || data.taraflar.davalilar.length === 0) &&
+        (!data.taraflar.vekiller || data.taraflar.vekiller.length === 0) &&
+        (!data.taraflar.talepler || data.taraflar.talepler.length === 0)) {
+      partyArea.innerHTML = "<span class='status-msg'>Taraflar ve talepler bulunamadı.</span>";
+    }
+  } else {
+    partyArea.innerHTML = "<span class='status-msg'>Taraflar analizi yapılamadı.</span>";
   }
 }
 
@@ -134,7 +244,7 @@ export function renderArea(id, obj) {
 export function clearAll() {
   document.getElementById("input").value = "";
   document.getElementById("output").textContent = "// Bekliyor...";
-  ["stats_area", "sentiment_area", "meta_area", "suc_adlari_area", "laws_area", "keywords_area", "legal_logic_area"].forEach(id => document.getElementById(id).innerHTML = "");
+  ["stats_area", "sentiment_area", "meta_area", "suc_adlari_area", "laws_area", "keywords_area", "legal_logic_area", "taraflar_area"].forEach(id => document.getElementById(id).innerHTML = "");
 }
 
 export function copyJSON() {
