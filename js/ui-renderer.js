@@ -1,19 +1,47 @@
 /**
  * UI Renderer Module
- * Analiz sonuçlarını UI'da gösterir
+ * Analiz sonuçlarını UI'da gösterir (API'den veri alır)
  */
-import { LegalAnalyzer } from './legal-analyzer.js';
 
-export function runAnalysis() {
-  const input = document.getElementById("input").value;
-  const data = LegalAnalyzer.analyze(input);
-  if (!data) return;
+export async function runAnalysis() {
+  const input = document.getElementById("input").value.trim();
+  if (!input) return;
 
+  const btn = document.getElementById("btn_analyze");
+  const statusEl = document.getElementById("loader_status");
+  const originalText = btn?.textContent;
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = "Analiz ediliyor...";
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: input }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || data.detail || `HTTP ${res.status}`);
+    }
+    if (!data) return;
+    renderResult(data);
+  } catch (err) {
+    document.getElementById("output").textContent = `// Hata: ${err.message}`;
+    if (statusEl) statusEl.textContent = "Analiz başarısız.";
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      if (originalText) btn.textContent = originalText;
+    }
+    if (statusEl && statusEl.textContent === "Analiz ediliyor...") statusEl.textContent = "Sözlük Hazır ✓";
+  }
+}
+
+function renderResult(data) {
   document.getElementById("output").textContent = JSON.stringify(data, null, 2);
 
   renderArea("stats_area", data.istatistikler);
-  
-  // Duygu analizi pasif
+
   const sentArea = document.getElementById("sentiment_area");
   sentArea.innerHTML = "";
 
