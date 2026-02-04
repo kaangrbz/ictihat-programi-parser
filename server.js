@@ -1,6 +1,7 @@
 /**
  * Express API sunucusu
  * Karar metnini parametre alır, analiz sonucunu JSON döner.
+ * HTTP ile çalışır; SSL/HTTPS gerekmez.
  */
 import fs from 'fs';
 import path from 'path';
@@ -45,6 +46,7 @@ function loadDictionary() {
 loadDictionary();
 
 const app = express();
+app.set('trust proxy', 0); // SSL/HTTPS zorunlu değil, sadece HTTP
 app.use(express.json({ limit: '2mb' }));
 
 // CORS: tüm origin'lere izin (herkese açık)
