@@ -10,6 +10,7 @@ describe('LegalLogicProcessor', () => {
       const result = LegalLogicProcessor.analyze(text);
       expect(result.flags.hagb_karari).toBe(true);
       expect(result.details.hagb_karari.found).toBe(true);
+      expect(result.details.hagb_karari.matchReason).toBeDefined();
     });
 
     test('bozma flagini bulur', () => {
@@ -70,8 +71,9 @@ describe('LegalLogicProcessor', () => {
       const text = `Karar bozuldu ve yeniden incelendi.
       Dava kabul edildi.`;
       const result = LegalLogicProcessor.analyze(text);
-      expect(result.flags.bozma_karari).toBe(true);
-      expect(result.flags.kabul_karari).toBe(true);
+      expect(result.rawFlags.bozma_karari).toBe(true);
+      expect(result.rawFlags.kabul_karari).toBe(true);
+      expect(result.finalDecision).toBeDefined();
     });
 
     test('flag bulunamazsa false döner', () => {
@@ -94,6 +96,21 @@ Satır 4`;
       const text = 'Kararın bozulmasına karar verildi';
       const result = LegalLogicProcessor.analyze(text);
       expect(result.details.bozma_karari.context).toContain('bozulmasına');
+      expect(result.details.bozma_karari.confidence).toBeGreaterThan(0);
+    });
+
+    test('baglamsiz patternlerde confidence daha dusuktur', () => {
+      const lowContextText = 'Bozma kelimesi doktrinde tartışılması bakımından geçmiştir';
+      const result = LegalLogicProcessor.analyze(lowContextText);
+      expect(result.details.bozma_karari.found).toBe(true);
+      expect(result.details.bozma_karari.confidence).toBeLessThan(75);
+    });
+
+    test('global confidence skoru dondurur', () => {
+      const text = 'Kararın bozulmasına karar verildi';
+      const result = LegalLogicProcessor.analyze(text);
+      expect(result.confidenceScore).toBeGreaterThanOrEqual(0);
+      expect(result.confidenceLevel).toBeDefined();
     });
   });
 

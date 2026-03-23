@@ -46,6 +46,7 @@ function renderResult(data) {
   sentArea.innerHTML = "";
 
   renderArea("meta_area", data.kimlik);
+  renderQualitySignal(data.kaliteSinyali);
 
   // Suç Adları
   const sucAdlariArea = document.getElementById("suc_adlari_area");
@@ -139,9 +140,18 @@ function renderResult(data) {
         if (detail && detail.satirIcerigi) {
           titleText += `\n\nSatır İçeriği:\n${detail.satirIcerigi.substring(0, 200)}${detail.satirIcerigi.length > 200 ? '...' : ''}`;
         }
+        if (detail && typeof detail.confidence === 'number') {
+          titleText += `\n\nConfidence: ${detail.confidence}/100`;
+        }
+        if (detail && detail.matchReason) {
+          titleText += `\nMatch: ${detail.matchReason}`;
+        }
         
         span.title = titleText;
-        span.innerHTML = `<span class="badge-label">${label}:</span><span class="badge-value">✓</span>`;
+        const confidenceText = detail && typeof detail.confidence === 'number'
+          ? ` (${detail.confidence})`
+          : '';
+        span.innerHTML = `<span class="badge-label">${label}${confidenceText}:</span><span class="badge-value">✓</span>`;
         logicArea.appendChild(span);
       }
     });
@@ -150,6 +160,8 @@ function renderResult(data) {
     const activeFlags = Object.values(flags).filter(v => v === true);
     if (activeFlags.length === 0) {
       logicArea.innerHTML = "<span class='status-msg'>Hukuki mantık kontrolü sonucu bulunamadı.</span>";
+    } else if ((data.hukukiMantik.confidenceScore || 0) < 55) {
+      logicArea.innerHTML += "<span class='status-msg'>Uyarı: Hukuki mantık confidence seviyesi düşük.</span>";
     }
   } else {
     logicArea.innerHTML = "<span class='status-msg'>Hukuki mantık analizi yapılamadı.</span>";
@@ -172,8 +184,12 @@ function renderResult(data) {
         if (davaci.satirNo) {
           titleText += `\n\nSatır No: ${davaci.satirNo}`;
         }
+        if (typeof davaci.confidence === 'number') {
+          titleText += `\n\nConfidence: ${davaci.confidence}/100`;
+        }
         span.title = titleText;
-        span.innerHTML = `<span class="badge-label">Davacı:</span><span class="badge-value">${davaci.isim}</span>`;
+        const confidenceText = typeof davaci.confidence === 'number' ? ` (${davaci.confidence})` : '';
+        span.innerHTML = `<span class="badge-label">Davacı${confidenceText}:</span><span class="badge-value">${davaci.isim}</span>`;
         partyArea.appendChild(span);
       });
     }
@@ -190,8 +206,12 @@ function renderResult(data) {
         if (davali.satirNo) {
           titleText += `\n\nSatır No: ${davali.satirNo}`;
         }
+        if (typeof davali.confidence === 'number') {
+          titleText += `\n\nConfidence: ${davali.confidence}/100`;
+        }
         span.title = titleText;
-        span.innerHTML = `<span class="badge-label">Davalı:</span><span class="badge-value">${davali.isim}</span>`;
+        const confidenceText = typeof davali.confidence === 'number' ? ` (${davali.confidence})` : '';
+        span.innerHTML = `<span class="badge-label">Davalı${confidenceText}:</span><span class="badge-value">${davali.isim}</span>`;
         partyArea.appendChild(span);
       });
     }
@@ -208,8 +228,12 @@ function renderResult(data) {
         if (vekil.satirNo) {
           titleText += `\n\nSatır No: ${vekil.satirNo}`;
         }
+        if (typeof vekil.confidence === 'number') {
+          titleText += `\n\nConfidence: ${vekil.confidence}/100`;
+        }
         span.title = titleText;
-        span.innerHTML = `<span class="badge-label">${vekil.tip || 'Vekil'}:</span><span class="badge-value">${vekil.isim}</span>`;
+        const confidenceText = typeof vekil.confidence === 'number' ? ` (${vekil.confidence})` : '';
+        span.innerHTML = `<span class="badge-label">${vekil.tip || 'Vekil'}${confidenceText}:</span><span class="badge-value">${vekil.isim}</span>`;
         partyArea.appendChild(span);
       });
     }
@@ -229,9 +253,13 @@ function renderResult(data) {
         if (talep.satirNo) {
           titleText += `\n\nSatır No: ${talep.satirNo}`;
         }
+        if (typeof talep.confidence === 'number') {
+          titleText += `\n\nConfidence: ${talep.confidence}/100`;
+        }
         span.title = titleText;
         const shortIcerik = talep.icerik ? talep.icerik.substring(0, 50) + (talep.icerik.length > 50 ? '...' : '') : '';
-        span.innerHTML = `<span class="badge-label">${talep.tip || 'Talep'}:</span><span class="badge-value">${shortIcerik}</span>`;
+        const confidenceText = typeof talep.confidence === 'number' ? ` (${talep.confidence})` : '';
+        span.innerHTML = `<span class="badge-label">${talep.tip || 'Talep'}${confidenceText}:</span><span class="badge-value">${shortIcerik}</span>`;
         partyArea.appendChild(span);
       });
     }
@@ -242,10 +270,44 @@ function renderResult(data) {
         (!data.taraflar.vekiller || data.taraflar.vekiller.length === 0) &&
         (!data.taraflar.talepler || data.taraflar.talepler.length === 0)) {
       partyArea.innerHTML = "<span class='status-msg'>Taraflar ve talepler bulunamadı.</span>";
+    } else {
+      const allItems = [
+        ...(data.taraflar.davacilar || []),
+        ...(data.taraflar.davalilar || []),
+        ...(data.taraflar.vekiller || []),
+        ...(data.taraflar.talepler || [])
+      ];
+      const hasLowConfidence = allItems.some(item => (item.confidence || 0) < 55);
+      if (hasLowConfidence) {
+        partyArea.innerHTML += "<span class='status-msg'>Uyarı: Bazı taraf/talep bulguları düşük confidence ile işaretlendi.</span>";
+      }
     }
   } else {
     partyArea.innerHTML = "<span class='status-msg'>Taraflar analizi yapılamadı.</span>";
   }
+}
+
+function renderQualitySignal(kaliteSinyali) {
+  const area = document.getElementById("sentiment_area");
+  if (!area) {
+    return;
+  }
+
+  area.innerHTML = "";
+  if (!kaliteSinyali) {
+    area.innerHTML = "<span class='status-msg'>Kalite sinyali hesaplanamadı.</span>";
+    return;
+  }
+
+  const scoreBadge = document.createElement("span");
+  scoreBadge.className = "badge sentiment-badge";
+  scoreBadge.innerHTML = `<span class="badge-label">Kalite Skoru:</span><span class="badge-value">${kaliteSinyali.puan}</span>`;
+  area.appendChild(scoreBadge);
+
+  const levelBadge = document.createElement("span");
+  levelBadge.className = "badge sentiment-badge";
+  levelBadge.innerHTML = `<span class="badge-label">Seviye:</span><span class="badge-value">${kaliteSinyali.seviye}</span>`;
+  area.appendChild(levelBadge);
 }
 
 export function renderArea(id, obj) {

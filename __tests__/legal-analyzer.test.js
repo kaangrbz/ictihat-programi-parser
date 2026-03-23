@@ -32,6 +32,7 @@ Davacı tazminat talep etti. Karar verildi.`;
       expect(result).toHaveProperty('hukukiMantik');
       expect(result).toHaveProperty('kavramlar');
       expect(result).toHaveProperty('istatistikler');
+      expect(result).toHaveProperty('kaliteSinyali');
       expect(result).toHaveProperty('analizTarihi');
     });
 
@@ -84,6 +85,14 @@ Davacı tazminat talep etti. Karar verildi.`;
       const result = LegalAnalyzer.analyze(text);
       expect(result.analizTarihi).toBeDefined();
       expect(result.analizTarihi.length).toBeGreaterThan(0);
+    });
+
+    test('kalite sinyali alanlarini içerir', () => {
+      const text = 'Davacı Ahmet Yılmaz dava açtı. Kararın bozulmasına karar verildi.';
+      const result = LegalAnalyzer.analyze(text);
+      expect(result.kaliteSinyali).toHaveProperty('puan');
+      expect(result.kaliteSinyali).toHaveProperty('seviye');
+      expect(result.kaliteSinyali).toHaveProperty('kirilim');
     });
   });
 });

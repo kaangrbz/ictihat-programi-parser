@@ -11,6 +11,7 @@ describe('PartyProcessor', () => {
       expect(result.davacilar).not.toBeNull();
       expect(result.davacilar.length).toBeGreaterThan(0);
       expect(result.davacilar[0].isim).toContain('Ahmet');
+      expect(result.davacilar[0].confidence).toBeGreaterThan(0);
     });
 
     test('davalı ismini çıkarır', () => {
@@ -19,6 +20,7 @@ describe('PartyProcessor', () => {
       expect(result.davalilar).not.toBeNull();
       expect(result.davalilar.length).toBeGreaterThan(0);
       expect(result.davalilar[0].isim).toContain('Mehmet');
+      expect(result.davalilar[0].confidence).toBeGreaterThan(0);
     });
 
     test('davacı vekilini çıkarır', () => {
@@ -28,6 +30,7 @@ describe('PartyProcessor', () => {
       expect(result.vekiller.length).toBeGreaterThan(0);
       expect(result.vekiller[0].isim).toContain('Ali');
       expect(result.vekiller[0].tip).toBe('Davacı Vekili');
+      expect(result.vekiller[0].confidence).toBeGreaterThan(0);
     });
 
     test('davalı vekilini çıkarır', () => {
@@ -53,6 +56,7 @@ describe('PartyProcessor', () => {
       expect(result.talepler).not.toBeNull();
       expect(result.talepler.length).toBeGreaterThan(0);
       expect(result.talepler[0].icerik).toContain('talep');
+      expect(result.talepler[0].confidence).toBeGreaterThan(0);
     });
 
     test('iddiayı çıkarır', () => {
@@ -115,6 +119,24 @@ Davalı zarar iddia etti.`;
       expect(result.davalilar.length).toBeGreaterThan(0);
       expect(result.vekiller.length).toBeGreaterThan(1);
       expect(result.talepler.length).toBeGreaterThan(1);
+    });
+
+    test('sinyali dusuk gürültü satirlarini taraf olarak islemez', () => {
+      const text = 'Davacı Mahkeme kararı gereğince dosya incelenmiştir.';
+      const result = PartyProcessor.extract(text);
+      expect(result.davacilar).toBeNull();
+    });
+
+    test('uzun karar metninde en az bir taraf veya talep sinyali yakalar', () => {
+      const text = `Yargıtay C.Başsavcılığı itiraz yasa yoluna başvurarak kararın kaldırılmasına
+ve dosyanın Özel Daireye gönderilmesine karar verilmesini talep etmiştir.
+Davacı vekili Av. Ali Demir dilekçe sundu.`;
+      const result = PartyProcessor.extract(text);
+      const total = (result.davacilar || []).length +
+        (result.davalilar || []).length +
+        (result.vekiller || []).length +
+        (result.talepler || []).length;
+      expect(total).toBeGreaterThan(0);
     });
   });
 });
