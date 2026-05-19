@@ -15,7 +15,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3002
+ENV PORT=8102
 
 # Sadece production bağımlılıkları
 COPY package.json yarn.lock ./
@@ -27,6 +27,6 @@ COPY --from=builder /app/server.js ./
 COPY --from=builder /app/js ./js
 COPY --from=builder /app/legal-dictionary.json ./
 
-EXPOSE 3002
+EXPOSE 8102
 
 CMD ["node", "server.js"]

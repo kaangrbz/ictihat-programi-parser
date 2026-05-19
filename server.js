@@ -11,7 +11,7 @@ import { setLegalDictionary } from './js/config.js';
 import { LegalAnalyzer } from './js/legal-analyzer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 8102;
 const isProduction = process.env.NODE_ENV === 'production';
 
 const SENTIMENT_DATA = {
