@@ -94,11 +94,28 @@ Davacılar Mehmet Demir ve Ali Kaya birlikte dava açtı.`;
       expect(result.davacilar[0].satirIcerigi).toBeDefined();
     });
 
+    test('sanık colon formatını çıkarır', () => {
+      const text = 'Sanık: Mehmet Yılmaz hakkında dava açıldı.';
+      const result = PartyProcessor.extract(text);
+      expect(result.saniklar).not.toBeNull();
+      expect(result.saniklar[0].isim).toContain('Mehmet');
+    });
+
+    test('müşteki colon formatını çıkarır', () => {
+      const text = 'Müşteki: Ayşe Demir şikayette bulundu.';
+      const result = PartyProcessor.extract(text);
+      expect(result.mustekiler).not.toBeNull();
+      expect(result.mustekiler[0].isim).toContain('Ayşe');
+    });
+
     test('bulunamayan taraflar için null döner', () => {
       const text = 'Bu metinde hiçbir taraf yok.';
       const result = PartyProcessor.extract(text);
       expect(result.davacilar).toBeNull();
       expect(result.davalilar).toBeNull();
+      expect(result.saniklar).toBeNull();
+      expect(result.mustekiler).toBeNull();
+      expect(result.mudahiller).toBeNull();
       expect(result.vekiller).toBeNull();
       expect(result.talepler).toBeNull();
     });
@@ -134,9 +151,23 @@ Davacı vekili Av. Ali Demir dilekçe sundu.`;
       const result = PartyProcessor.extract(text);
       const total = (result.davacilar || []).length +
         (result.davalilar || []).length +
+        (result.saniklar || []).length +
+        (result.mustekiler || []).length +
+        (result.mudahiller || []).length +
         (result.vekiller || []).length +
         (result.talepler || []).length;
       expect(total).toBeGreaterThan(0);
+    });
+
+    test('fallback scan ile DAVACI satırından isim çıkarır', () => {
+      const header = 'DAVACI\n';
+      const nameLine = 'AHMET YILMAZ\n';
+      const padding = Array.from({ length: 5 }, () => 'boş satır').join('\n');
+      const text = `${header}${nameLine}${padding}`;
+      const result = PartyProcessor.extract(text);
+
+      expect(result.davacilar).not.toBeNull();
+      expect(result.davacilar[0].kaynak).toBe('fallback-scan');
     });
   });
 });

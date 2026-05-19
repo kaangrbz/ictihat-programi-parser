@@ -73,7 +73,12 @@ describe('LegalLogicProcessor', () => {
       const result = LegalLogicProcessor.analyze(text);
       expect(result.rawFlags.bozma_karari).toBe(true);
       expect(result.rawFlags.kabul_karari).toBe(true);
-      expect(result.finalDecision).toBeDefined();
+    });
+
+    test('kısmen bozma flagini bulur', () => {
+      const text = 'Hükmün kısmen bozulmasına karar verildi';
+      const result = LegalLogicProcessor.analyze(text);
+      expect(result.flags.kismen_bozma_karari).toBe(true);
     });
 
     test('flag bulunamazsa false döner', () => {

@@ -3,6 +3,7 @@
  */
 import { LegalAnalyzer } from '../js/legal-analyzer.js';
 import { setLegalDictionary } from '../js/config.js';
+import { SCHEMA_VERSION } from '../js/schema.js';
 
 describe('LegalAnalyzer', () => {
   beforeEach(() => {
@@ -26,8 +27,10 @@ Davacı tazminat talep etti. Karar verildi.`;
       
       const result = LegalAnalyzer.analyze(text);
       
+      expect(result).toHaveProperty('schemaVersion', SCHEMA_VERSION);
       expect(result).toHaveProperty('kimlik');
       expect(result).toHaveProperty('duyguAnalizi');
+      expect(result).toHaveProperty('taraflar');
       expect(result).toHaveProperty('mevzuat');
       expect(result).toHaveProperty('hukukiMantik');
       expect(result).toHaveProperty('kavramlar');
@@ -55,6 +58,26 @@ Davacı tazminat talep etti. Karar verildi.`;
       const result = LegalAnalyzer.analyze(text);
       expect(result.hukukiMantik).toHaveProperty('flags');
       expect(result.hukukiMantik).toHaveProperty('details');
+      expect(result.hukukiMantik).toHaveProperty('nihaiKarar');
+      expect(result.hukukiMantik).toHaveProperty('finalDecision');
+    });
+
+    test('HTML girdiyi normalize ederek analiz eder', () => {
+      const text = '<p>5237 S. TÜRK CEZA KANUNU [ Madde 124 ]</p><br>Karar bozuldu';
+      const result = LegalAnalyzer.analyze(text);
+
+      expect(result.mevzuat.length).toBeGreaterThan(0);
+      expect(result.hukukiMantik.nihaiKarar.sonuc).toBe('bozma');
+    });
+
+    test('çoklu karar flaginde tek nihaiKarar üretir', () => {
+      const text = 'Karar bozuldu. Dava kabul edildi.';
+      const result = LegalAnalyzer.analyze(text);
+
+      expect(result.hukukiMantik.rawFlags.bozma_karari).toBe(true);
+      expect(result.hukukiMantik.rawFlags.kabul_karari).toBe(true);
+      expect(result.hukukiMantik.nihaiKarar.sonuc).toBe('bozma');
+      expect(result.hukukiMantik.flags.kabul_karari).toBe(false);
     });
 
     test('kavramları içerir', () => {

@@ -4,7 +4,7 @@
  */
 export const LegalLogicProcessor = {
   analyze(text) {
-    const lines = text.split('\n');
+    const lines = typeof text === 'string' ? text.split('\n') : [];
     const checks = {
       hagb_karari: {
         patterns: [
@@ -16,6 +16,10 @@ export const LegalLogicProcessor = {
       },
       bozma_karari: {
         patterns: [/bozma/gi, /bozulması/gi, /bozuldu/gi, /bozulmasına/gi, /bozma\s+kararı/gi],
+        requiredContext: ['karar', 'hüküm', 'dava']
+      },
+      kismen_bozma_karari: {
+        patterns: [/kısmen\s+boz/gi, /kısmen\s+bozulmasına/gi, /kısmen\s+bozuldu/gi, /kısmen\s+bozma/gi],
         requiredContext: ['karar', 'hüküm', 'dava']
       },
       onama_karari: {
@@ -61,14 +65,12 @@ export const LegalLogicProcessor = {
       details[key] = result;
     });
 
-    const resolved = this.resolveDecisionConflicts(flags, details);
     const quality = this.calculateGlobalConfidence(details);
 
     return {
-      flags: resolved.flags,
-      details: resolved.details,
-      rawFlags: flags,
-      finalDecision: resolved.finalDecision,
+      flags: { ...flags },
+      details,
+      rawFlags: { ...flags },
       confidenceScore: quality.confidenceScore,
       confidenceLevel: quality.confidenceLevel
     };
@@ -82,15 +84,19 @@ export const LegalLogicProcessor = {
       const prevLine = lines[i - 1] ? lines[i - 1].toLowerCase() : '';
 
       for (const pattern of patterns) {
-        if (pattern.test(line)) {
+        pattern.lastIndex = 0; // Reset index for global patterns
+        const match = pattern.exec(line);
+        if (match) {
           const contextualMatch = this.hasContext(lowerLine, prevLine, nextLine, requiredContext);
           const confidence = this.calculateLineConfidence(lowerLine, contextualMatch);
+          
+          const { smartContext, smartSatir } = this.extractSmartBounds(line, match.index, match[0].length);
 
           return {
             found: true,
-            context: line.trim().substring(0, 150) + (line.trim().length > 150 ? "..." : ""),
+            context: smartContext,
             lineNo: i + 1,
-            satirIcerigi: line.trim(),
+            satirIcerigi: smartSatir,
             type: type,
             confidence: confidence,
             contextMatched: contextualMatch,
@@ -109,6 +115,54 @@ export const LegalLogicProcessor = {
       contextMatched: false,
       matchReason: 'not-found'
     };
+  },
+
+  extractSmartBounds(line, matchIndex, matchLength) {
+    const matchEnd = matchIndex + matchLength;
+    
+    // Find closest punctuation before the match
+    const beforeText = line.substring(0, matchIndex);
+    let startCut = beforeText.lastIndexOf(';');
+    if (startCut === -1) {
+      startCut = beforeText.lastIndexOf('.');
+    }
+    
+    // If ';' or '.' is too far, just take a reasonable chunk. 
+    // We avoid using ',' for start bounds because it splits sentences and subjects too much.
+    if (startCut === -1 || matchIndex - startCut > 300) {
+      startCut = Math.max(0, matchIndex - 200); 
+    } else {
+      startCut += 1; // don't include the punctuation mark itself
+    }
+
+    // Find closest punctuation after the match to end the block
+    const afterText = line.substring(matchEnd);
+    let endCut = afterText.indexOf(';');
+    if (endCut === -1) endCut = afterText.indexOf('.');
+    
+    let commaCut = afterText.indexOf(',');
+    // commas are perfect for ending judgement clauses
+    if (endCut === -1 || (commaCut !== -1 && commaCut < endCut)) {
+      endCut = commaCut;
+    }
+    
+    if (endCut === -1 || endCut > 200) {
+      endCut = Math.min(afterText.length, 200);
+    }
+    endCut += matchEnd; // Absolute index based on line length
+    
+    let smartSatir = line.substring(startCut, endCut).trim();
+    if (startCut > 0) smartSatir = "..." + smartSatir;
+    if (endCut < line.length) smartSatir = smartSatir + "...";
+    
+    // Simple strict window around the match for the context preview
+    const contextStart = Math.max(0, matchIndex - 75);
+    const contextEnd = Math.min(line.length, matchEnd + 75);
+    let smartContext = line.substring(contextStart, contextEnd).trim();
+    if (contextStart > 0) smartContext = "..." + smartContext;
+    if (contextEnd < line.length) smartContext = smartContext + "...";
+
+    return { smartContext, smartSatir };
   },
 
   hasContext(line, prevLine, nextLine, requiredContext) {
@@ -138,44 +192,6 @@ export const LegalLogicProcessor = {
     }
 
     return Math.max(0, Math.min(100, score));
-  },
-
-  resolveDecisionConflicts(flags, details) {
-    const resolvedFlags = { ...flags };
-    const resolvedDetails = { ...details };
-    const decisionKeys = ['bozma_karari', 'onama_karari', 'red_karari', 'kabul_karari', 'beraat_karari'];
-    const activeDecisions = decisionKeys.filter(key => resolvedFlags[key] === true);
-
-    if (activeDecisions.length <= 1) {
-      return {
-        flags: resolvedFlags,
-        details: resolvedDetails,
-        finalDecision: activeDecisions[0] || null
-      };
-    }
-
-    const prioritized = [...activeDecisions].sort((firstKey, secondKey) => {
-      const firstConfidence = resolvedDetails[firstKey]?.confidence || 0;
-      const secondConfidence = resolvedDetails[secondKey]?.confidence || 0;
-      return secondConfidence - firstConfidence;
-    });
-
-    const finalDecision = prioritized[0];
-    activeDecisions.forEach(key => {
-      if (key !== finalDecision) {
-        resolvedFlags[key] = false;
-        resolvedDetails[key] = {
-          ...resolvedDetails[key],
-          suppressedByPriority: true
-        };
-      }
-    });
-
-    return {
-      flags: resolvedFlags,
-      details: resolvedDetails,
-      finalDecision: finalDecision
-    };
   },
 
   calculateGlobalConfidence(details) {

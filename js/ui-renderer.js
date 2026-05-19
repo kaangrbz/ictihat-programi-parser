@@ -46,6 +46,14 @@ function renderResult(data) {
   sentArea.innerHTML = "";
 
   renderArea("meta_area", data.kimlik);
+
+  const metaArea = document.getElementById("meta_area");
+  if (metaArea && data.schemaVersion) {
+    const schemaBadge = document.createElement("span");
+    schemaBadge.className = "badge";
+    schemaBadge.innerHTML = `<span class="badge-label">schemaVersion:</span><span class="badge-value">${data.schemaVersion}</span>`;
+    metaArea.prepend(schemaBadge);
+  }
   renderQualitySignal(data.kaliteSinyali);
 
   // Suç Adları
@@ -108,6 +116,7 @@ function renderResult(data) {
   const flagLabels = {
     'hagb_karari': 'Hükmün Açıklanmasının Geri Bırakılması (HAGB)',
     'bozma_karari': 'Bozma Kararı',
+    'kismen_bozma_karari': 'Kısmen Bozma Kararı',
     'onama_karari': 'Onama Kararı',
     'red_karari': 'Red Kararı',
     'kabul_karari': 'Kabul Kararı',
@@ -117,10 +126,32 @@ function renderResult(data) {
     'görevsizlik': 'Görevsizlik',
     'derdestlik': 'Derdestlik'
   };
+
+  const nihaiLabels = {
+    bozma: 'Bozma',
+    kısmenBozma: 'Kısmen bozma',
+    onama: 'Onama',
+    red: 'Red',
+    kabul: 'Kabul',
+    beraat: 'Beraat',
+    belirsiz: 'Belirsiz'
+  };
   
   if (data.hukukiMantik && data.hukukiMantik.flags) {
     const flags = data.hukukiMantik.flags;
     const details = data.hukukiMantik.details;
+
+    if (data.hukukiMantik.nihaiKarar && data.hukukiMantik.nihaiKarar.sonuc) {
+      const nihai = data.hukukiMantik.nihaiKarar;
+      const nihaiSpan = document.createElement("span");
+      nihaiSpan.className = "badge sentiment-badge";
+      const label = nihaiLabels[nihai.sonuc] || nihai.sonuc;
+      const conf = typeof nihai.confidence === 'number'
+        ? ` (${Math.round(nihai.confidence * 100)}%)`
+        : '';
+      nihaiSpan.innerHTML = `<span class="badge-label">Nihai karar:</span><span class="badge-value">${label}${conf}</span>`;
+      logicArea.appendChild(nihaiSpan);
+    }
     
     // Aktif flag'leri göster
     Object.entries(flags).forEach(([key, value]) => {
@@ -171,50 +202,43 @@ function renderResult(data) {
   const partyArea = document.getElementById("taraflar_area");
   partyArea.innerHTML = "";
   
+  function appendPartyBadge(roleLabel, person) {
+    const span = document.createElement("span");
+    span.className = "badge keyword-badge";
+    let titleText = `${roleLabel}: ${person.isim}`;
+    if (person.baglam) {
+      titleText += `\n\nBağlam:\n${person.baglam}`;
+    }
+    if (person.satirNo) {
+      titleText += `\n\nSatır No: ${person.satirNo}`;
+    }
+    if (person.kaynak) {
+      titleText += `\n\nKaynak: ${person.kaynak}`;
+    }
+    if (typeof person.confidence === 'number') {
+      titleText += `\n\nConfidence: ${person.confidence}/100`;
+    }
+    span.title = titleText;
+    const confidenceText = typeof person.confidence === 'number' ? ` (${person.confidence})` : '';
+    const tip = person.tip ? person.tip : roleLabel;
+    span.innerHTML = `<span class="badge-label">${tip}${confidenceText}:</span><span class="badge-value">${person.isim}</span>`;
+    partyArea.appendChild(span);
+  }
+
   if (data.taraflar) {
-    // Davacılar
-    if (data.taraflar.davacilar && data.taraflar.davacilar.length > 0) {
-      data.taraflar.davacilar.forEach(davaci => {
-        const span = document.createElement("span");
-        span.className = "badge keyword-badge";
-        let titleText = `Davacı: ${davaci.isim}`;
-        if (davaci.baglam) {
-          titleText += `\n\nBağlam:\n${davaci.baglam}`;
-        }
-        if (davaci.satirNo) {
-          titleText += `\n\nSatır No: ${davaci.satirNo}`;
-        }
-        if (typeof davaci.confidence === 'number') {
-          titleText += `\n\nConfidence: ${davaci.confidence}/100`;
-        }
-        span.title = titleText;
-        const confidenceText = typeof davaci.confidence === 'number' ? ` (${davaci.confidence})` : '';
-        span.innerHTML = `<span class="badge-label">Davacı${confidenceText}:</span><span class="badge-value">${davaci.isim}</span>`;
-        partyArea.appendChild(span);
-      });
-    }
-    
-    // Davalılar
-    if (data.taraflar.davalilar && data.taraflar.davalilar.length > 0) {
-      data.taraflar.davalilar.forEach(davali => {
-        const span = document.createElement("span");
-        span.className = "badge keyword-badge";
-        let titleText = `Davalı: ${davali.isim}`;
-        if (davali.baglam) {
-          titleText += `\n\nBağlam:\n${davali.baglam}`;
-        }
-        if (davali.satirNo) {
-          titleText += `\n\nSatır No: ${davali.satirNo}`;
-        }
-        if (typeof davali.confidence === 'number') {
-          titleText += `\n\nConfidence: ${davali.confidence}/100`;
-        }
-        span.title = titleText;
-        const confidenceText = typeof davali.confidence === 'number' ? ` (${davali.confidence})` : '';
-        span.innerHTML = `<span class="badge-label">Davalı${confidenceText}:</span><span class="badge-value">${davali.isim}</span>`;
-        partyArea.appendChild(span);
-      });
-    }
+    const personGroups = [
+      { key: 'davacilar', label: 'Davacı' },
+      { key: 'davalilar', label: 'Davalı' },
+      { key: 'saniklar', label: 'Sanık' },
+      { key: 'mustekiler', label: 'Müşteki' },
+      { key: 'mudahiller', label: 'Müdahil' }
+    ];
+
+    personGroups.forEach(({ key, label }) => {
+      if (data.taraflar[key] && data.taraflar[key].length > 0) {
+        data.taraflar[key].forEach((person) => appendPartyBadge(label, person));
+      }
+    });
     
     // Vekiller
     if (data.taraflar.vekiller && data.taraflar.vekiller.length > 0) {
@@ -265,15 +289,17 @@ function renderResult(data) {
     }
     
     // Hiçbir şey bulunamadıysa
-    if ((!data.taraflar.davacilar || data.taraflar.davacilar.length === 0) &&
-        (!data.taraflar.davalilar || data.taraflar.davalilar.length === 0) &&
-        (!data.taraflar.vekiller || data.taraflar.vekiller.length === 0) &&
-        (!data.taraflar.talepler || data.taraflar.talepler.length === 0)) {
+    const hasAnyParty = personGroups.some(({ key }) =>
+      data.taraflar[key] && data.taraflar[key].length > 0
+    ) ||
+      (data.taraflar.vekiller && data.taraflar.vekiller.length > 0) ||
+      (data.taraflar.talepler && data.taraflar.talepler.length > 0);
+
+    if (!hasAnyParty) {
       partyArea.innerHTML = "<span class='status-msg'>Taraflar ve talepler bulunamadı.</span>";
     } else {
       const allItems = [
-        ...(data.taraflar.davacilar || []),
-        ...(data.taraflar.davalilar || []),
+        ...personGroups.flatMap(({ key }) => data.taraflar[key] || []),
         ...(data.taraflar.vekiller || []),
         ...(data.taraflar.talepler || [])
       ];

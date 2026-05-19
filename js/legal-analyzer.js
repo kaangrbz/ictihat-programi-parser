@@ -3,30 +3,41 @@
  * Tüm analiz modüllerini birleştirir ve ana analiz fonksiyonunu sağlar
  */
 import { MetaProcessor } from './meta-processor.js';
-import { SentimentProcessor } from './sentiment-processor.js';
 import { LawProcessor } from './law-processor.js';
 import { StatsProcessor } from './stats-processor.js';
 import { KeywordProcessor } from './keyword-processor.js';
 import { LegalLogicProcessor } from './legal-logic-processor.js';
 import { PartyProcessor } from './party-processor.js';
+import { normalizeLegalText } from './text-normalizer.js';
+import { SCHEMA_VERSION } from './schema.js';
+import { finalizeDecision } from './decision-finalizer.js';
 
 export const LegalAnalyzer = {
   analyze(text) {
-    if (!text.trim()) return null;
+    const normalized = normalizeLegalText(text ?? '');
 
-    const keywords = KeywordProcessor.extract(text);
-    const hukukiMantik = LegalLogicProcessor.analyze(text);
-    const taraflar = PartyProcessor.extract(text);
-    const kaliteSinyali = this.buildQualitySignal(hukukiMantik, taraflar, keywords.length);
+    if (!normalized.trim()) {
+      return null;
+    }
+
+    const kimlik = MetaProcessor.extract(normalized);
+    const mevzuat = LawProcessor.parse(normalized);
+    const kavramlar = KeywordProcessor.extract(normalized);
+    const taraflar = PartyProcessor.extract(normalized);
+    const hukukiMantikRaw = LegalLogicProcessor.analyze(normalized);
+    const hukukiMantik = finalizeDecision(hukukiMantikRaw);
+    const istatistikler = StatsProcessor.calculate(normalized, kavramlar.length);
+    const kaliteSinyali = this.buildQualitySignal(hukukiMantik, taraflar, kavramlar.length);
 
     return {
-      kimlik: MetaProcessor.extract(text),
-      duyguAnalizi: null, // Pasif
-      mevzuat: LawProcessor.parse(text),
+      schemaVersion: SCHEMA_VERSION,
+      kimlik: kimlik,
+      duyguAnalizi: null,
+      mevzuat: mevzuat,
       hukukiMantik: hukukiMantik,
-      kavramlar: keywords,
+      kavramlar: kavramlar,
       taraflar: taraflar,
-      istatistikler: StatsProcessor.calculate(text, keywords.length),
+      istatistikler: istatistikler,
       kaliteSinyali: kaliteSinyali,
       analizTarihi: new Date().toLocaleString('tr-TR')
     };
@@ -36,6 +47,9 @@ export const LegalAnalyzer = {
     const partyItems = [
       ...(taraflar.davacilar || []),
       ...(taraflar.davalilar || []),
+      ...(taraflar.saniklar || []),
+      ...(taraflar.mustekiler || []),
+      ...(taraflar.mudahiller || []),
       ...(taraflar.vekiller || []),
       ...(taraflar.talepler || [])
     ];
@@ -46,6 +60,7 @@ export const LegalAnalyzer = {
     const overallScore = Math.round((partyConfidence * 0.4) + (logicConfidence * 0.45) + (baseKeywordScore * 0.15));
 
     let level = 'Dusuk';
+
     if (overallScore >= 75) {
       level = 'Yuksek';
     } else if (overallScore >= 50) {
