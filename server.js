@@ -81,17 +81,36 @@ app.post('/api/analyze', (req, res) => {
   }
 });
 
-// Production: Vite build çıktısını statik olarak sun
+// Statik UI (geliştirme + production build)
+const staticRoots = isProduction
+  ? [path.join(__dirname, 'dist')]
+  : [__dirname];
+
+for (const root of staticRoots) {
+  if (fs.existsSync(root)) {
+    app.use(express.static(root));
+  }
+}
+
 if (isProduction) {
   const distPath = path.join(__dirname, 'dist');
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      const index = path.join(distPath, 'index.html');
-      if (fs.existsSync(index)) res.sendFile(index);
-      else res.status(404).send('Not found');
-    });
-  }
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    const requested = path.join(distPath, req.path === '/' ? 'index.html' : req.path);
+    if (fs.existsSync(requested) && fs.statSync(requested).isFile()) {
+      return res.sendFile(requested);
+    }
+
+    const index = path.join(distPath, 'index.html');
+    if (fs.existsSync(index)) {
+      return res.sendFile(index);
+    }
+
+    return res.status(404).send('Not found');
+  });
 }
 
 const HOST = "0.0.0.0";

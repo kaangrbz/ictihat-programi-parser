@@ -8,6 +8,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
+        explorer: 'explorer.html',
         'law-parser': 'law-parser.html',
       },
     },
@@ -16,7 +17,7 @@ export default defineConfig({
     port: 5173,
     open: true,
     proxy: {
-      '/api': { target: 'http://localhost:3002', changeOrigin: true },
+      '/api': { target: 'http://localhost:8102', changeOrigin: true },
     },
   },
 });

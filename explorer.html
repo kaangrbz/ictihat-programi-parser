@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parser Explorer — UYAP İçtihat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/explorer.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Parser Explorer</h1>
+    <nav>
+      <a href="index.html">Klasik UI</a>
+      <a href="law-parser.html">Kanun parçalayıcı</a>
+      <span style="color:var(--muted)">Şema 1.1.0</span>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-head">Girdi & filtreler</div>
+      <div class="panel-body">
+        <label class="field-label">Örnek metin</label>
+        <select id="sample-select">
+          <option value="">— seçin —</option>
+        </select>
+        <div class="btn-row">
+          <button type="button" class="secondary" id="btn-load-sample">Örneği yükle</button>
+        </div>
+
+        <label class="field-label" style="margin-top:16px">Karar metni</label>
+        <textarea id="input-text" placeholder="Yargıtay kararı veya HTML metin yapıştırın…"></textarea>
+
+        <div class="btn-row">
+          <button type="button" id="btn-analyze">Analiz et</button>
+          <button type="button" class="secondary" id="btn-clear">Temizle</button>
+          <button type="button" class="ghost" id="btn-export">JSON indir</button>
+        </div>
+        <p id="status-text" class="status-bar">Hazır</p>
+
+        <div class="filter-grid">
+          <label class="field-label">Genel arama</label>
+          <input type="search" id="filter-query" placeholder="Kavram, isim, kanun…" />
+
+          <label class="field-label">Nihai karar</label>
+          <select id="filter-nihai"></select>
+
+          <label class="field-label">Mahkeme içerir</label>
+          <input type="text" id="filter-mahkeme" placeholder="ör. Genel Kurulu" />
+
+          <label class="field-label">Kanun no</label>
+          <input type="text" id="filter-law" placeholder="ör. 5237" />
+
+          <label class="field-label">Min. flag güven (0-100)</label>
+          <input type="number" id="filter-confidence" min="0" max="100" value="0" />
+        </div>
+
+        <div id="preview-box" class="preview-box" style="margin-top:16px">
+          <p class="empty-state">Satır önizlemesi için tablodaki bir satıra tıklayın.</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel" style="border-right:none">
+      <div class="panel-head">Analiz sonucu</div>
+      <div class="panel-body">
+        <div id="stats-row" class="stats-row"></div>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="overview">Özet</button>
+          <button type="button" class="tab" data-tab="mevzuat">Mevzuat</button>
+          <button type="button" class="tab" data-tab="logic">Hukuki mantık</button>
+          <button type="button" class="tab" data-tab="parties">Taraflar</button>
+          <button type="button" class="tab" data-tab="json">Ham JSON</button>
+        </div>
+
+        <div id="tab-overview" class="tab-panel active"></div>
+        <div id="tab-mevzuat" class="tab-panel"></div>
+        <div id="tab-logic" class="tab-panel"></div>
+        <div id="tab-parties" class="tab-panel"></div>
+        <div id="tab-json" class="tab-panel"></div>
+      </div>
+    </main>
+
+    <aside class="panel">
+      <div class="panel-head">Parametre rehberi</div>
+      <div class="panel-body" id="params-panel"></div>
+    </aside>
+  </div>
+
+  <script type="module" src="js/explorer/explorer-app.js"></script>
+</body>
+</html>

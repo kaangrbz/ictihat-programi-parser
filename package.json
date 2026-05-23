@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"node server.js\"",
+    "dev:explorer": "concurrently \"vite --open /explorer.html\" \"node server.js\"",
     "dev:frontend": "vite",
     "dev:api": "node server.js",
     "build": "vite build",
