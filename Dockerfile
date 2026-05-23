@@ -1,6 +1,11 @@
 # Build aşaması: Vite ile frontend build
 FROM node:20-alpine AS builder
 
+ENV TZ=Europe/Istanbul
+RUN apk add --no-cache tzdata \
+  && cp /usr/share/zoneinfo/$TZ /etc/localtime \
+  && echo "$TZ" > /etc/timezone
+
 WORKDIR /app
 
 COPY package.json yarn.lock ./
@@ -11,6 +16,11 @@ RUN yarn build
 
 # Production aşaması: Express API + statik dosyalar
 FROM node:20-alpine AS runner
+
+ENV TZ=Europe/Istanbul
+RUN apk add --no-cache tzdata \
+  && cp /usr/share/zoneinfo/$TZ /etc/localtime \
+  && echo "$TZ" > /etc/timezone
 
 WORKDIR /app
 
